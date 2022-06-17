@@ -1,0 +1,22 @@
+[package]
+name = "asar"
+description = "A crate to read and write asar archives, often used by Electron apps."
+version = "0.1.0"
+edition = "2021"
+authors = ["Lucy <lucy@absolucy.moe>"]
+license = "Apache-2.0 OR MIT"
+
+[dependencies]
+byteorder = "1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+serde_with = { version = "1", features = ["hex"] }
+sha2 = { version = "0.10", optional = true }
+thiserror = "1"
+
+[dev-dependencies]
+include_dir = "0.7"
+
+[features]
+default = []
+integrity = ["sha2"]

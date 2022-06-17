@@ -1,0 +1,88 @@
+{
+	"files": {
+		"file 1.txt": {
+			"size": 13,
+			"offset": "0",
+			"integrity": {
+				"algorithm": "SHA256",
+				"hash": "dffd6021bb2bd5b0af676290809ec3a53191dd81c7f70a4b28688a362182986f",
+				"blockSize": 4194304,
+				"blocks": [
+					"dffd6021bb2bd5b0af676290809ec3a53191dd81c7f70a4b28688a362182986f"
+				]
+			}
+		},
+		"file 2.txt": {
+			"size": 13,
+			"offset": "13",
+			"integrity": {
+				"algorithm": "SHA256",
+				"hash": "477d61de387ac83b5d024a3e5582d7b33463e73fe270d555f71e4d50f0fd9a52",
+				"blockSize": 4194304,
+				"blocks": [
+					"477d61de387ac83b5d024a3e5582d7b33463e73fe270d555f71e4d50f0fd9a52"
+				]
+			}
+		},
+		"folder 1": {
+			"files": {
+				"file 3.txt": {
+					"size": 3,
+					"offset": "26",
+					"integrity": {
+						"algorithm": "SHA256",
+						"hash": "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
+						"blockSize": 4194304,
+						"blocks": [
+							"ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
+						]
+					}
+				},
+				"folder 2": {
+					"files": {
+						"file 4.txt": {
+							"size": 20,
+							"offset": "29",
+							"integrity": {
+								"algorithm": "SHA256",
+								"hash": "db5105940bebf4262f84f9ab88e36d5acd427530d29bee868fbc107691823995",
+								"blockSize": 4194304,
+								"blocks": [
+									"db5105940bebf4262f84f9ab88e36d5acd427530d29bee868fbc107691823995"
+								]
+							}
+						},
+						"file 5.txt": {
+							"size": 34,
+							"offset": "49",
+							"integrity": {
+								"algorithm": "SHA256",
+								"hash": "bab38bead0d481e2e72c7a73e67637e669844a97ab192ea14fdedd5c8d341d7e",
+								"blockSize": 4194304,
+								"blocks": [
+									"bab38bead0d481e2e72c7a73e67637e669844a97ab192ea14fdedd5c8d341d7e"
+								]
+							}
+						}
+					}
+				},
+				"folder 3": {
+					"files": {
+						"file 6.txt": {
+							"size": 31,
+							"offset": "83",
+							"integrity": {
+								"algorithm": "SHA256",
+								"hash": "4ec00f9102a0e2519a49e8f1bacd12faed0f5fad55d08a32abb7f68ce3925749",
+								"blockSize": 4194304,
+								"blocks": [
+									"4ec00f9102a0e2519a49e8f1bacd12faed0f5fad55d08a32abb7f68ce3925749"
+								]
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
