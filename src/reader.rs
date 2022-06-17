@@ -88,8 +88,40 @@ fn recursive_read<'a>(
 			if data.len() < end {
 				return Err(Error::Truncated);
 			}
+			let data = &data[start..end];
+			#[cfg(feature = "integrity")]
+			{
+				let integrity = file.integrity();
+				let algorithm = integrity.algorithm();
+				let block_size = integrity.block_size();
+				let blocks = integrity.blocks();
+				if block_size > 0 && !blocks.is_empty() {
+					for (idx, (block, expected_hash)) in
+						data.chunks(block_size).zip(blocks.iter()).enumerate()
+					{
+						let hash = algorithm.hash(block);
+						if hash != *expected_hash {
+							return Err(Error::HashMismatch {
+								file: path,
+								block: Some(idx + 1),
+								expected: expected_hash.to_owned(),
+								actual: hash,
+							});
+						}
+					}
+				}
+				let hash = algorithm.hash(data);
+				if hash != integrity.hash() {
+					return Err(Error::HashMismatch {
+						file: path,
+						block: None,
+						expected: integrity.hash().to_owned(),
+						actual: hash,
+					});
+				}
+			}
 			file_map.insert(path, AsarFile {
-				data: &data[start..end],
+				data,
 				integrity: file.integrity().clone(),
 			});
 		}

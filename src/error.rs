@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 use serde::de::Error as DeError;
 use serde_json::Error as JsonError;
-use std::io::Error as IoError;
+use std::{io::Error as IoError, path::PathBuf};
 use thiserror::Error as ThisError;
 
 #[derive(Debug, ThisError)]
@@ -12,6 +12,19 @@ pub enum Error {
 	Json(#[from] JsonError),
 	#[error("Archive is truncated")]
 	Truncated,
+	#[error(
+		"Hash mismatch in file {}{}. Expected: {}, got: {}",
+		.file.display(),
+		.block.map(|block| format!(", block #{}", block)).unwrap_or_default(),
+		hex::encode(.expected),
+		hex::encode(.actual)
+	)]
+	HashMismatch {
+		file: PathBuf,
+		block: Option<usize>,
+		expected: Vec<u8>,
+		actual: Vec<u8>,
+	},
 }
 
 impl Clone for Error {
@@ -20,6 +33,17 @@ impl Clone for Error {
 			Self::Io(io_err) => Self::Io(IoError::new(io_err.kind(), io_err.to_string())),
 			Self::Json(json_err) => Self::Json(JsonError::custom(json_err.to_string())),
 			Self::Truncated => Self::Truncated,
+			Self::HashMismatch {
+				file,
+				block,
+				expected,
+				actual,
+			} => Self::HashMismatch {
+				file: file.clone(),
+				block: *block,
+				expected: expected.clone(),
+				actual: actual.clone(),
+			},
 		}
 	}
 }
@@ -39,6 +63,25 @@ impl PartialEq for Error {
 					&& json_err.to_string() == other_json_err.to_string()
 			}
 			(Self::Truncated, Self::Truncated) => true,
+			(
+				Self::HashMismatch {
+					file,
+					block,
+					expected,
+					actual,
+				},
+				Self::HashMismatch {
+					file: other_file,
+					block: other_block,
+					expected: other_expected,
+					actual: other_actual,
+				},
+			) => {
+				file == other_file
+					&& block == other_block
+					&& expected == other_expected
+					&& actual == other_actual
+			}
 			_ => false,
 		}
 	}
