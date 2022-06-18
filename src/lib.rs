@@ -22,8 +22,7 @@
 //!
 //! fn main() -> Result<()> {
 //! 	let asar_file = fs::read("archive.asar")?;
-//! 	let (header, offset) = Header::read(&mut &asar_file[..])?;
-//! 	let asar = AsarReader::new(header, offset, &asar_file)?;
+//! 	let asar = AsarReader::new(&asar_file)?;
 //!
 //! 	println!("There are {} files in archive.asar", asar.files().len());
 //! 	for path in asar.files().keys() {
@@ -40,8 +39,7 @@
 //!
 //! fn main() -> Result<()> {
 //! 	let asar_file = fs::read("archive.asar")?;
-//! 	let (header, offset) = Header::read(&mut &asar_file[..])?;
-//! 	let asar = AsarReader::new(header, offset, &asar_file)?;
+//! 	let asar = AsarReader::new(&asar_file)?;
 //!
 //! 	let path = PathBuf::from("hello.txt");
 //! 	let file = asar.files().get(&path).unwrap();
@@ -63,13 +61,25 @@
 //! 	Ok(())
 //! }
 //! ```
+//!
+//! # Features
+//!
+//!  - `integrity`: Enable integrity checks/calculation.
+//!  - `check-integrity-on-read`: Enable integrity checks when reading an
+//!    archive, failing if any integrity check fails.
+//!  - `write` - Enable writing an asar archive. **Enabled by default**, also
+//!    enables `integrity`.
 
+/// Error handling for parsing, reading, and writing asar archives.
 pub mod error;
+/// Header parsing for asar archives.
 pub mod header;
 #[cfg(feature = "integrity")]
 pub(crate) mod integrity;
+/// Reading asar archives.
 pub mod reader;
 #[cfg(feature = "write")]
+/// Writing asar archives.
 pub mod writer;
 
 pub use error::{Error, Result};

@@ -26,8 +26,7 @@ use std::{
 ///
 /// fn main() -> Result<()> {
 /// 	let asar_file = fs::read("archive.asar")?;
-/// 	let (header, offset) = Header::read(&mut &asar_file[..])?;
-/// 	let reader = AsarReader::new(header, offset, &asar_file)?;
+/// 	let reader = AsarReader::new(&asar_file)?;
 ///
 /// 	println!("There are {} files in archive.asar", reader.files().len());
 /// 	Ok(())
@@ -41,7 +40,38 @@ pub struct AsarReader<'a> {
 }
 
 impl<'a> AsarReader<'a> {
-	pub fn new(header: Header, begin_offset: usize, data: &'a [u8]) -> Result<Self> {
+	/// Parse and read an asar archive from a byte buffer.
+	///
+	/// ```rust,no_run
+	/// use asar::{AsarReader, Header, Result};
+	/// use std::fs;
+	///
+	/// fn main() -> Result<()> {
+	/// 	let asar_file = fs::read("archive.asar")?;
+	/// 	let asar = AsarReader::new(&asar_file)?;
+	/// 	Ok(())
+	/// }
+	/// ```
+	pub fn new(data: &'a [u8]) -> Result<Self> {
+		let (header, offset) = Header::read(&mut &data[..])?;
+		Self::new_from_header(header, offset, data)
+	}
+
+	/// Read an asar archive from a byte buffer, using the given header and
+	/// offset.
+	///
+	/// ```rust,no_run
+	/// use asar::{AsarReader, Header, Result};
+	/// use std::fs;
+	///
+	/// fn main() -> Result<()> {
+	/// 	let asar_file = fs::read("archive.asar")?;
+	/// 	let (header, offset) = Header::read(&mut &asar_file[..])?;
+	/// 	let asar = AsarReader::new_from_header(header, offset, &asar_file)?;
+	/// 	Ok(())
+	/// }
+	/// ```
+	pub fn new_from_header(header: Header, offset: usize, data: &'a [u8]) -> Result<Self> {
 		let mut files = BTreeMap::new();
 		let mut directories = BTreeMap::new();
 		recursive_read(
@@ -49,7 +79,7 @@ impl<'a> AsarReader<'a> {
 			&mut files,
 			&mut directories,
 			&header,
-			begin_offset,
+			offset,
 			data,
 		)?;
 		Ok(Self {
@@ -183,15 +213,14 @@ fn recursive_read<'a>(
 #[cfg(test)]
 pub mod test {
 	use super::AsarReader;
-	use crate::header::{Header, TEST_ASAR};
+	use crate::header::TEST_ASAR;
 	use include_dir::{include_dir, Dir};
 
 	static ASAR_CONTENTS: Dir = include_dir!("$CARGO_MANIFEST_DIR/data/contents");
 
 	#[test]
 	fn test_reading() {
-		let (header, offset) = Header::read(&mut &*TEST_ASAR).expect("failed to read asar header");
-		let reader = AsarReader::new(header, offset, TEST_ASAR).expect("failed to read asar");
+		let reader = AsarReader::new(TEST_ASAR).expect("failed to read asar");
 		for (path, file) in reader.files() {
 			let real_file = ASAR_CONTENTS
 				.get_file(path)
