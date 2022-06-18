@@ -6,7 +6,7 @@ use crate::{
 };
 use byteorder::{LittleEndian, WriteBytesExt};
 use std::{
-	collections::{HashMap, VecDeque},
+	collections::{BTreeMap, VecDeque},
 	io::Write,
 	path::{Component, Path, PathBuf},
 };
@@ -14,7 +14,7 @@ use std::{
 const BLOCK_SIZE: usize = 4 * 1024 * 1024; // 4 MiB
 
 pub struct AsarWriter {
-	files: HashMap<PathBuf, File>,
+	files: BTreeMap<PathBuf, File>,
 	buffer: Vec<u8>,
 	offset: usize,
 	hasher: HashAlgorithm,
@@ -34,7 +34,7 @@ impl AsarWriter {
 	/// [`HashAlgorithm::Sha256`] — is supported
 	pub fn new_with_algorithm(hasher: HashAlgorithm) -> Self {
 		Self {
-			files: HashMap::new(),
+			files: BTreeMap::new(),
 			buffer: Vec::new(),
 			offset: 0,
 			hasher,
@@ -137,7 +137,7 @@ impl Default for AsarWriter {
 	/// [`HashAlgorithm`]
 	fn default() -> Self {
 		Self {
-			files: HashMap::new(),
+			files: BTreeMap::new(),
 			offset: 0,
 			buffer: Vec::new(),
 			hasher: HashAlgorithm::Sha256,
@@ -204,6 +204,36 @@ mod test {
 		let (header_b, offset_b) =
 			Header::read(&mut &*out_ref).expect("failed to read asar header");
 		let reader_b = AsarReader::new(header_b, offset_b, &out).expect("failed to read new asar");
-		assert_eq!(reader_a.files(), reader_b.files());
+		let files_a = reader_a.files();
+		let files_b = reader_b.files();
+		let mut missing = Vec::new();
+		let mut differs = Vec::new();
+		assert_eq!(files_a.len(), files_b.len());
+		for (k, v) in files_a {
+			match files_b.get(k) {
+				Some(v2) => {
+					if v != v2 {
+						differs.push((k.to_owned(), v.data(), v2.data()));
+					}
+				}
+				None => {
+					missing.push(k.to_owned());
+				}
+			}
+		}
+		if !missing.is_empty() || !differs.is_empty() {
+			for m in missing {
+				println!("missing: {}", m.display());
+			}
+			for (path, correct, incorrect) in differs {
+				println!("differs: {}", path.display());
+				let correct = std::str::from_utf8(correct).unwrap();
+				let incorrect = std::str::from_utf8(incorrect).unwrap();
+				println!("correct: {}", correct);
+				println!("incorrect: {}", incorrect);
+				println!();
+			}
+			panic!("ASAR archives differ!");
+		}
 	}
 }

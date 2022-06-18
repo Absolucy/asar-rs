@@ -4,7 +4,7 @@ use crate::{
 	header::{FileIntegrity, Header},
 };
 use std::{
-	collections::HashMap,
+	collections::BTreeMap,
 	path::{Path, PathBuf},
 };
 
@@ -30,14 +30,14 @@ use std::{
 #[derive(Debug, Clone, PartialEq)]
 pub struct AsarReader<'a> {
 	header: Header,
-	directories: HashMap<PathBuf, Vec<PathBuf>>,
-	files: HashMap<PathBuf, AsarFile<'a>>,
+	directories: BTreeMap<PathBuf, Vec<PathBuf>>,
+	files: BTreeMap<PathBuf, AsarFile<'a>>,
 }
 
 impl<'a> AsarReader<'a> {
 	pub fn new(header: Header, begin_offset: usize, data: &'a [u8]) -> Result<Self> {
-		let mut files = HashMap::new();
-		let mut directories = HashMap::new();
+		let mut files = BTreeMap::new();
+		let mut directories = BTreeMap::new();
 		recursive_read(
 			PathBuf::new(),
 			&mut files,
@@ -55,13 +55,13 @@ impl<'a> AsarReader<'a> {
 
 	/// Gets all files in the asar.
 	#[inline]
-	pub const fn files(&self) -> &HashMap<PathBuf, AsarFile<'a>> {
+	pub const fn files(&self) -> &BTreeMap<PathBuf, AsarFile<'a>> {
 		&self.files
 	}
 
 	/// Gets all directories in the asar.
 	#[inline]
-	pub const fn directories(&self) -> &HashMap<PathBuf, Vec<PathBuf>> {
+	pub const fn directories(&self) -> &BTreeMap<PathBuf, Vec<PathBuf>> {
 		&self.directories
 	}
 
@@ -102,8 +102,8 @@ impl<'a> AsarFile<'a> {
 
 fn recursive_read<'a>(
 	path: PathBuf,
-	file_map: &mut HashMap<PathBuf, AsarFile<'a>>,
-	dir_map: &mut HashMap<PathBuf, Vec<PathBuf>>,
+	file_map: &mut BTreeMap<PathBuf, AsarFile<'a>>,
+	dir_map: &mut BTreeMap<PathBuf, Vec<PathBuf>>,
 	header: &Header,
 	begin_offset: usize,
 	data: &'a [u8],
