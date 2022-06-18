@@ -86,6 +86,14 @@ fn recursive_read<'a>(
 			let start = begin_offset + file.offset();
 			let end = start + file.size();
 			if data.len() < end {
+				println!(
+					"file truncated path='{}', data_len={}, start={}, size={}, end={}",
+					path.display(),
+					data.len(),
+					start,
+					file.size(),
+					end
+				);
 				return Err(Error::Truncated);
 			}
 			let data = &data[start..end];

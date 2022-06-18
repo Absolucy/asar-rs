@@ -4,3 +4,5 @@ pub mod header;
 #[cfg(feature = "integrity")]
 pub(crate) mod integrity;
 pub mod reader;
+#[cfg(feature = "write")]
+pub mod writer;

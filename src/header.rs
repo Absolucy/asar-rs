@@ -16,6 +16,12 @@ pub enum Header {
 }
 
 impl Header {
+	pub(crate) fn new() -> Self {
+		Self::Directory {
+			files: HashMap::new(),
+		}
+	}
+
 	/// Reads the header from a slice.
 	pub fn read<Read: ReadBytesExt>(data: &mut Read) -> Result<(Self, usize)> {
 		data.read_u32::<LittleEndian>()?; // magic number or something idk
@@ -44,6 +50,20 @@ pub struct File {
 }
 
 impl File {
+	pub(crate) fn new(
+		offset: usize,
+		size: usize,
+		executable: bool,
+		integrity: FileIntegrity,
+	) -> Self {
+		Self {
+			offset,
+			size,
+			executable,
+			integrity,
+		}
+	}
+
 	/// The offset from the end of the header that this file is located at.
 	#[inline]
 	pub fn offset(&self) -> usize {
@@ -86,6 +106,20 @@ pub struct FileIntegrity {
 }
 
 impl FileIntegrity {
+	pub(crate) fn new(
+		algorithm: HashAlgorithm,
+		hash: Vec<u8>,
+		block_size: usize,
+		blocks: Vec<Vec<u8>>,
+	) -> Self {
+		Self {
+			algorithm,
+			hash,
+			block_size,
+			blocks,
+		}
+	}
+
 	/// The hashing algorithm used to calculate the hash.
 	#[inline]
 	pub fn algorithm(&self) -> HashAlgorithm {

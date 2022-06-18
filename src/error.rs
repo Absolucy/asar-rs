@@ -13,7 +13,7 @@ pub enum Error {
 	#[error("Archive is truncated")]
 	Truncated,
 	#[error(
-		"Hash mismatch in file {}{}. Expected: {}, got: {}",
+		"Hash mismatch in file '{}'{}. Expected: {}, got: {}",
 		.file.display(),
 		.block.map(|block| format!(", block #{}", block)).unwrap_or_default(),
 		hex::encode(.expected),
@@ -25,6 +25,8 @@ pub enum Error {
 		expected: Vec<u8>,
 		actual: Vec<u8>,
 	},
+	#[error("File '{}' has already been written", .0.display())]
+	FileAlreadyWritten(PathBuf),
 }
 
 impl Clone for Error {
@@ -44,6 +46,7 @@ impl Clone for Error {
 				expected: expected.clone(),
 				actual: actual.clone(),
 			},
+			Self::FileAlreadyWritten(path) => Self::FileAlreadyWritten(path.clone()),
 		}
 	}
 }
@@ -81,6 +84,9 @@ impl PartialEq for Error {
 					&& block == other_block
 					&& expected == other_expected
 					&& actual == other_actual
+			}
+			(Self::FileAlreadyWritten(path), Self::FileAlreadyWritten(other_path)) => {
+				path == other_path
 			}
 			_ => false,
 		}
