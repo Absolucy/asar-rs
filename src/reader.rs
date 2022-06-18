@@ -89,7 +89,7 @@ fn recursive_read<'a>(
 				return Err(Error::Truncated);
 			}
 			let data = &data[start..end];
-			#[cfg(feature = "integrity")]
+			#[cfg(feature = "check-integrity-on-read")]
 			{
 				let integrity = file.integrity();
 				let algorithm = integrity.algorithm();

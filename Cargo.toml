@@ -19,5 +19,7 @@ thiserror = "1"
 include_dir = "0.7"
 
 [features]
-default = []
+default = ["write"]
 integrity = ["sha2"]
+write = ["integrity"]
+check-integrity-on-read = ["integrity"]
