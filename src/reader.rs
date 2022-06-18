@@ -14,6 +14,12 @@ use std::{
 /// The lifetime of the [`AsarReader`] is tied to the lifetime of the byte
 /// buffer that it reads from.
 ///
+/// If the `check-integrity-on-read` feature is enabled, then the [`AsarReader`]
+/// will check file integrity when reading an archive, and error out if any
+/// integrity check fails.
+///
+/// ## Example
+///
 /// ```rust,no_run
 /// use asar::{AsarReader, Header, Result};
 /// use std::fs;
