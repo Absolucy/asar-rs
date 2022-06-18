@@ -21,10 +21,27 @@ pub struct AsarWriter {
 }
 
 impl AsarWriter {
+	/// Creates a new [`AsarWriter`], with an empty buffer and the default
+	/// [`HashAlgorithm`]
 	pub fn new() -> Self {
 		Self::default()
 	}
 
+	/// Creates a new [`AsarWriter`], with an empty buffer and the given
+	/// [`HashAlgorithm`]
+	///
+	/// Currently useless, as only one [`HashAlgorithm`] —
+	/// [`HashAlgorithm::Sha256`] — is supported
+	pub fn new_with_algorithm(hasher: HashAlgorithm) -> Self {
+		Self {
+			files: HashMap::new(),
+			buffer: Vec::new(),
+			offset: 0,
+			hasher,
+		}
+	}
+
+	/// Adds all the files from an [`AsarReader`] to the [`AsarWriter`].
 	pub fn add_from_reader(&mut self, reader: &AsarReader) -> Result<()> {
 		for (path, file) in reader.files() {
 			self.write_file(path, file.data(), false)?;
@@ -33,8 +50,13 @@ impl AsarWriter {
 	}
 
 	/// Write a file to the archive.
-	/// This appends the contents to the writer, adds the file to the header,
+	/// This appends the contents to the buffer, adds the file to the header,
 	/// and updates the offset.
+	///
+	/// ## Errors
+	///
+	///  - If the file already exists in the archive, returns an
+	///    [`Error::FileAlreadyWritten`]
 	pub fn write_file(
 		&mut self,
 		path: impl AsRef<Path>,
@@ -65,7 +87,18 @@ impl AsarWriter {
 		Ok(())
 	}
 
-	/// Finalizes the archive, writing the header + files to the writer.
+	/// Finalizes the archive, writing the [`Header`] and the files to the
+	/// writer.
+	///
+	/// The buffer is also flushed before returning.
+	///
+	/// Returns the amount of bytes written.
+	///
+	/// ## Errors
+	///
+	///  - If writing fails, an [std::io::Error] is returned.
+	///  - This can **panic** if an invalid path (such as one containing `.` or
+	///    `..`) was added to the archive.
 	pub fn finalize<FinalWriter>(self, mut final_writer: FinalWriter) -> Result<usize>
 	where
 		FinalWriter: Write,
@@ -100,6 +133,8 @@ impl AsarWriter {
 }
 
 impl Default for AsarWriter {
+	/// Creates a new [`AsarWriter`], with an empty buffer and the default
+	/// [`HashAlgorithm`]
 	fn default() -> Self {
 		Self {
 			files: HashMap::new(),
@@ -166,7 +201,6 @@ mod test {
 		writer.finalize(&mut out).expect("failed to finalize asar");
 		let out = out.into_inner();
 		let out_ref = out.as_ref() as &[u8];
-		println!("{}", hex::encode(out_ref));
 		let (header_b, offset_b) =
 			Header::read(&mut &*out_ref).expect("failed to read asar header");
 		let reader_b = AsarReader::new(header_b, offset_b, &out).expect("failed to read new asar");

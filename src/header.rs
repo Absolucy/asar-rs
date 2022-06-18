@@ -8,6 +8,12 @@ use std::collections::HashMap;
 #[cfg(test)]
 pub(crate) static TEST_ASAR: &[u8] = include_bytes!("../data/test.asar");
 
+/// The [`Header`] represents the data structure found in asar archives. It can
+/// either be a [`File`], or a Directory containing other [`Header`]s.
+///
+/// It is a recursive structure, and a massive pain in the ass as a result. You
+/// really don't want to manually mess with these — use
+/// [`AsarReader`](crate::reader::AsarReader) instead.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum Header {
@@ -22,7 +28,20 @@ impl Header {
 		}
 	}
 
-	/// Reads the header from a slice.
+	/// Reads the header from a reader.
+	/// ```rust,no_run
+	/// use asar::{Header, Result};
+	/// use std::fs;
+	///
+	/// fn main() -> Result<()> {
+	/// 	let asar_file = fs::read("archive.asar")?;
+	/// 	let (header, offset) = Header::read(&mut &asar_file[..])?;
+	///
+	/// 	println!("Header ends at offset {offset}");
+	/// 	println!("Header: {header:#?}");
+	/// 	Ok(())
+	/// }
+	/// ```
 	pub fn read<Read: ReadBytesExt>(data: &mut Read) -> Result<(Self, usize)> {
 		data.read_u32::<LittleEndian>()?; // magic number or something idk
 		let header_size = data.read_u32::<LittleEndian>()? as usize;
@@ -34,6 +53,9 @@ impl Header {
 	}
 }
 
+/// This struct contains details about a file in an asar archive, such as
+/// where it is located in the archive, its size, whether its executable or not,
+/// and integrity details such as cryptographic hashes.
 #[serde_as]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct File {
@@ -50,7 +72,7 @@ pub struct File {
 }
 
 impl File {
-	pub(crate) fn new(
+	pub(crate) const fn new(
 		offset: usize,
 		size: usize,
 		executable: bool,
@@ -65,30 +87,36 @@ impl File {
 	}
 
 	/// The offset from the end of the header that this file is located at.
+	///
+	/// Note that this is represented as a [`String`] in the JSON format,
+	/// but we convert it to/from a [`usize`] when we read/write the JSON.
 	#[inline]
-	pub fn offset(&self) -> usize {
+	pub const fn offset(&self) -> usize {
 		self.offset
 	}
 
-	/// The total size of the file.
+	/// The total size of the file, in bytes.
 	#[inline]
-	pub fn size(&self) -> usize {
+	pub const fn size(&self) -> usize {
 		self.size
 	}
 
 	/// Whether this file is executable or not.
 	#[inline]
-	pub fn executable(&self) -> bool {
+	pub const fn executable(&self) -> bool {
 		self.executable
 	}
 
 	/// Integrity details of the file, such as hashes.
 	#[inline]
-	pub fn integrity(&self) -> &FileIntegrity {
+	pub const fn integrity(&self) -> &FileIntegrity {
 		&self.integrity
 	}
 }
 
+/// This struct contains the integrity details of a file, such as
+/// a hash of the file's contents, and hashes of "blocks" of the file, which is
+/// split according to the `block_size` specified in it.
 #[serde_as]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -122,19 +150,21 @@ impl FileIntegrity {
 
 	/// The hashing algorithm used to calculate the hash.
 	#[inline]
-	pub fn algorithm(&self) -> HashAlgorithm {
+	pub const fn algorithm(&self) -> HashAlgorithm {
 		self.algorithm
 	}
 
-	/// The hash of the file
+	/// The hash of the file.
 	#[inline]
 	pub fn hash(&self) -> &[u8] {
 		&self.hash
 	}
 
 	/// The size of each "block" to be hashed in a file.
+	///
+	/// Defaults to 4 MiB.
 	#[inline]
-	pub fn block_size(&self) -> usize {
+	pub const fn block_size(&self) -> usize {
 		self.block_size
 	}
 
@@ -145,10 +175,14 @@ impl FileIntegrity {
 	}
 }
 
+/// This struct specifies which cryptographic hashing algorithm is used to
+/// calculate the hash of a file in the archive.
+///
+/// Currently, only [SHA-256](https://en.wikipedia.org/wiki/SHA-2) is supported.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[non_exhaustive]
 pub enum HashAlgorithm {
-	/// The SHA-256 hashing algorithm
+	/// The [SHA-256](https://en.wikipedia.org/wiki/SHA-2) hashing algorithm
 	#[serde(rename = "SHA256")]
 	Sha256,
 }

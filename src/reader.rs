@@ -8,6 +8,25 @@ use std::{
 	path::{Path, PathBuf},
 };
 
+/// An AsarReader is a struct that takes an asar [`Header`] and its offset,
+/// and reads the files specified in the header from the given byte buffer.
+///
+/// The lifetime of the [`AsarReader`] is tied to the lifetime of the byte
+/// buffer that it reads from.
+///
+/// ```rust,no_run
+/// use asar::{AsarReader, Header, Result};
+/// use std::fs;
+///
+/// fn main() -> Result<()> {
+/// 	let asar_file = fs::read("archive.asar")?;
+/// 	let (header, offset) = Header::read(&mut &asar_file[..])?;
+/// 	let reader = AsarReader::new(header, offset, &asar_file)?;
+///
+/// 	println!("There are {} files in archive.asar", reader.files().len());
+/// 	Ok(())
+/// }
+/// ```
 #[derive(Debug, Clone, PartialEq)]
 pub struct AsarReader<'a> {
 	header: Header,
@@ -36,8 +55,14 @@ impl<'a> AsarReader<'a> {
 
 	/// Gets all files in the asar.
 	#[inline]
-	pub fn files(&self) -> &HashMap<PathBuf, AsarFile<'a>> {
+	pub const fn files(&self) -> &HashMap<PathBuf, AsarFile<'a>> {
 		&self.files
+	}
+
+	/// Gets all directories in the asar.
+	#[inline]
+	pub const fn directories(&self) -> &HashMap<PathBuf, Vec<PathBuf>> {
+		&self.directories
 	}
 
 	/// Gets information about a file.
@@ -53,6 +78,8 @@ impl<'a> AsarReader<'a> {
 	}
 }
 
+/// This represents a file in an asar archive, with a byte slice referencing the
+/// contents, and the integrity details containing file hashes.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct AsarFile<'a> {
 	data: &'a [u8],
@@ -62,13 +89,13 @@ pub struct AsarFile<'a> {
 impl<'a> AsarFile<'a> {
 	/// The data of the file.
 	#[inline]
-	pub fn data(&self) -> &[u8] {
+	pub const fn data(&self) -> &[u8] {
 		self.data
 	}
 
 	/// Integrity details of the file, such as hashes.
 	#[inline]
-	pub fn integrity(&self) -> &FileIntegrity {
+	pub const fn integrity(&self) -> &FileIntegrity {
 		&self.integrity
 	}
 }
