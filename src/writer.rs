@@ -147,10 +147,12 @@ impl AsarWriter {
 			recursive_add_to_header(path, file, &mut header);
 		}
 		let mut written = 0;
-		let json = serde_json::to_string(&header)?;
+		let mut json = serde_json::to_string(&header)?.into_bytes();
 
 		let json_size = json.len() as u32;
 		let aligned_json_size = json_size + (4 - (json_size % 4)) % 4;
+		json.resize(aligned_json_size as usize, 0);
+
 		final_writer.write_u32::<LittleEndian>(4)?;
 		written += std::mem::size_of::<u32>();
 		final_writer.write_u32::<LittleEndian>(aligned_json_size + 8)?;
@@ -159,10 +161,8 @@ impl AsarWriter {
 		written += std::mem::size_of::<u32>();
 		final_writer.write_u32::<LittleEndian>(json_size)?;
 		written += std::mem::size_of::<u32>();
-		final_writer.write_all(json.as_bytes())?;
+		final_writer.write_all(&json)?;
 		written += json.len();
-		final_writer.write_u16::<LittleEndian>(0)?;
-		written += std::mem::size_of::<u16>();
 		final_writer.write_all(&self.buffer)?;
 		written += self.buffer.len();
 		final_writer.flush()?;
