@@ -42,6 +42,19 @@ impl AsarWriter {
 	}
 
 	/// Adds all the files from an [`AsarReader`] to the [`AsarWriter`].
+	///
+	/// ## Example
+	/// ```rust,no_run
+	/// # use std::fs;
+	/// use asar::{AsarReader, AsarWriter, Header};
+	///
+	/// # let asar_file = fs::read("archive.asar")?;
+	/// let reader = AsarReader::new(&asar_file)?;
+	/// let mut writer = AsarWriter::new();
+	/// writer.add_from_reader(&reader)?;
+	///
+	/// # Ok::<(), asar::Error>(())
+	/// ```
 	pub fn add_from_reader(&mut self, reader: &AsarReader) -> Result<()> {
 		for (path, file) in reader.files() {
 			self.write_file(path, file.data(), false)?;
@@ -57,6 +70,16 @@ impl AsarWriter {
 	///
 	///  - If the file already exists in the archive, returns an
 	///    [`Error::FileAlreadyWritten`]
+	///
+	/// ## Example
+	///
+	/// ```rust,no_run
+	/// use asar::AsarWriter;
+	///
+	/// let mut writer = AsarWriter::new();
+	/// writer.write_file("bad news.txt", b"Nothing travels faster than the speed of light with the possible exception of bad news, which obeys its own special laws.", false)?;
+	/// # Ok::<(), asar::Error>(())
+	/// ```
 	pub fn write_file(
 		&mut self,
 		path: impl AsRef<Path>,
@@ -99,6 +122,21 @@ impl AsarWriter {
 	///  - If writing fails, an [std::io::Error] is returned.
 	///  - This can **panic** if an invalid path (such as one containing `.` or
 	///    `..`) was added to the archive.
+	///
+	/// ## Example
+	///
+	/// ```rust,no_run
+	/// use asar::AsarWriter;
+	/// use std::fs::File;
+	///
+	/// let mut writer = AsarWriter::new();
+	/// writer.write_file("bad news.txt", b"Nothing travels faster than the speed of light with the possible exception of bad news, which obeys its own special laws.", false)?;
+	/// writer.write_file("advice.txt", b"Don't Panic.", false)?;
+	/// writer.write_file("truth.txt", b"In the beginning the Universe was created. This has made a lot of people very angry and been widely regarded as a bad move.", false)?;
+	/// let mut file = File::create("archive.asar")?;
+	/// writer.finalize(&mut file)?;
+	/// # Ok::<(), asar::Error>(())
+	/// ```
 	pub fn finalize<FinalWriter>(self, mut final_writer: FinalWriter) -> Result<usize>
 	where
 		FinalWriter: Write,

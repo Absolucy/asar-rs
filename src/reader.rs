@@ -45,14 +45,12 @@ impl<'a> AsarReader<'a> {
 	/// ## Example
 	///
 	/// ```rust,no_run
-	/// use asar::{AsarReader, Header, Result};
+	/// use asar::{AsarReader, Header};
 	/// use std::fs;
 	///
-	/// fn main() -> Result<()> {
-	/// 	let asar_file = fs::read("archive.asar")?;
-	/// 	let asar = AsarReader::new(&asar_file)?;
-	/// 	Ok(())
-	/// }
+	/// let asar_file = fs::read("archive.asar")?;
+	/// let asar = AsarReader::new(&asar_file)?;
+	/// # Ok::<(), asar::Error>(())
 	/// ```
 	pub fn new(data: &'a [u8]) -> Result<Self> {
 		let (header, offset) = Header::read(&mut &data[..])?;
@@ -65,15 +63,13 @@ impl<'a> AsarReader<'a> {
 	/// ## Example
 	///
 	/// ```rust,no_run
-	/// use asar::{AsarReader, Header, Result};
+	/// use asar::{AsarReader, Header};
 	/// use std::fs;
 	///
-	/// fn main() -> Result<()> {
-	/// 	let asar_file = fs::read("archive.asar")?;
-	/// 	let (header, offset) = Header::read(&mut &asar_file[..])?;
-	/// 	let asar = AsarReader::new_from_header(header, offset, &asar_file)?;
-	/// 	Ok(())
-	/// }
+	/// let asar_file = fs::read("archive.asar")?;
+	/// let (header, offset) = Header::read(&mut &asar_file[..])?;
+	/// let asar = AsarReader::new_from_header(header, offset, &asar_file)?;
+	/// # Ok::<(), asar::Error>(())
 	/// ```
 	pub fn new_from_header(header: Header, offset: usize, data: &'a [u8]) -> Result<Self> {
 		let mut files = BTreeMap::new();
@@ -98,19 +94,17 @@ impl<'a> AsarReader<'a> {
 	/// ## Example
 	///
 	/// ```rust,no_run
-	/// use asar::{AsarReader, Result};
-	/// use std::fs;
+	/// # use std::fs;
+	/// use asar::AsarReader;
 	///
-	/// fn main() -> Result<()> {
-	/// 	let asar_file = fs::read("archive.asar")?;
-	/// 	let asar = AsarReader::new(&asar_file)?;
-	/// 	for (path, file_info) in asar.files() {
-	/// 		println!("file {}", path.display());
-	/// 		println!("\t{} bytes", file_info.data().len());
-	/// 		println!("\thash: {}", hex::encode(file_info.integrity().hash()));
-	/// 	}
-	/// 	Ok(())
+	/// # let asar_file = fs::read("archive.asar")?;
+	/// # let asar = AsarReader::new(&asar_file)?;
+	/// for (path, file_info) in asar.files() {
+	/// 	println!("file {}", path.display());
+	/// 	println!("\t{} bytes", file_info.data().len());
+	/// 	println!("\thash: {}", hex::encode(file_info.integrity().hash()));
 	/// }
+	/// # Ok::<(), asar::Error>(())
 	/// ```
 	#[inline]
 	pub const fn files(&self) -> &BTreeMap<PathBuf, AsarFile<'a>> {
@@ -122,20 +116,18 @@ impl<'a> AsarReader<'a> {
 	/// ## Example
 	///
 	/// ```rust,no_run
-	/// use asar::{AsarReader, Result};
-	/// use std::fs;
+	/// # use std::fs;
+	/// use asar::AsarReader;
 	///
-	/// fn main() -> Result<()> {
-	/// 	let asar_file = fs::read("archive.asar")?;
-	/// 	let asar = AsarReader::new(&asar_file)?;
-	/// 	for (path, contents) in asar.directories() {
-	/// 		println!("dir {}", path.display());
-	/// 		for file in contents {
-	/// 			println!("\tfile {}", file.display());
-	/// 		}
+	/// # let asar_file = fs::read("archive.asar")?;
+	/// # let asar = AsarReader::new(&asar_file)?;
+	/// for (path, contents) in asar.directories() {
+	/// 	println!("dir {}", path.display());
+	/// 	for file in contents {
+	/// 		println!("\tfile {}", file.display());
 	/// 	}
-	/// 	Ok(())
 	/// }
+	/// # Ok::<(), asar::Error>(())
 	/// ```
 	#[inline]
 	pub const fn directories(&self) -> &BTreeMap<PathBuf, Vec<PathBuf>> {
@@ -147,16 +139,15 @@ impl<'a> AsarReader<'a> {
 	/// ## Example
 	///
 	/// ```rust,no_run
-	/// use asar::{AsarReader, Result};
-	/// use std::{fs, path::Path};
+	/// # use std::fs;
+	/// use asar::AsarReader;
+	/// use std::path::Path;
 	///
-	/// fn main() -> Result<()> {
-	/// 	let asar_file = fs::read("archive.asar")?;
-	/// 	let asar = AsarReader::new(&asar_file)?;
-	/// 	let file_info = asar.read(Path::new("hello.txt")).unwrap();
-	/// 	println!("hello.txt is {} bytes", file_info.data().len());
-	/// 	Ok(())
-	/// }
+	/// # let asar_file = fs::read("archive.asar")?;
+	/// # let asar = AsarReader::new(&asar_file)?;
+	/// let file_info = asar.read(Path::new("hello.txt")).unwrap();
+	/// println!("hello.txt is {} bytes", file_info.data().len());
+	/// # Ok::<(), asar::Error>(())
 	/// ```
 	#[inline]
 	pub fn read(&self, path: &Path) -> Option<&AsarFile> {
@@ -168,18 +159,17 @@ impl<'a> AsarReader<'a> {
 	/// ## Example
 	///
 	/// ```rust,no_run
-	/// use asar::{AsarReader, Result};
-	/// use std::{fs, path::Path};
+	/// # use std::fs;
+	/// use asar::AsarReader;
+	/// use std::path::Path;
 	///
-	/// fn main() -> Result<()> {
-	/// 	let asar_file = fs::read("archive.asar")?;
-	/// 	let asar = AsarReader::new(&asar_file)?;
-	/// 	let contents = asar.read_dir(Path::new("dir a/dir b")).unwrap();
-	/// 	for file in contents {
-	/// 		println!("file {}", file.display());
-	/// 	}
-	/// 	Ok(())
+	/// # let asar_file = fs::read("archive.asar")?;
+	/// # let asar = AsarReader::new(&asar_file)?;
+	/// let contents = asar.read_dir(Path::new("dir a/dir b")).unwrap();
+	/// for file in contents {
+	/// 	println!("file {}", file.display());
 	/// }
+	/// # Ok::<(), asar::Error>(())
 	/// ```
 	#[inline]
 	pub fn read_dir(&self, path: &Path) -> Option<&[PathBuf]> {
@@ -200,16 +190,15 @@ impl<'a> AsarFile<'a> {
 	///
 	/// ## Example
 	/// ```rust,no_run
-	/// use asar::{AsarReader, Result};
-	/// use std::{fs, path::Path};
+	/// # use std::fs;
+	/// use asar::AsarReader;
+	/// use std::path::Path;
 	///
-	/// fn main() -> Result<()> {
-	/// 	let asar_file = fs::read("archive.asar")?;
-	/// 	let asar = AsarReader::new(&asar_file)?;
-	/// 	let file_info = asar.read(Path::new("hello.txt")).unwrap();
-	/// 	assert_eq!(file_info.data(), b"Hello, World!");
-	/// 	Ok(())
-	/// }
+	/// # let asar_file = fs::read("archive.asar")?;
+	/// # let asar = AsarReader::new(&asar_file)?;
+	/// let file_info = asar.read(Path::new("hello.txt")).unwrap();
+	/// assert_eq!(file_info.data(), b"Hello, World!");
+	/// # Ok::<(), asar::Error>(())
 	/// ```
 	#[inline]
 	pub const fn data(&self) -> &[u8] {
@@ -220,17 +209,20 @@ impl<'a> AsarFile<'a> {
 	///
 	/// ## Example
 	/// ```rust,no_run
-	/// use asar::{AsarReader, Result};
-	/// use std::{fs, path::Path};
+	/// # use std::fs;
+	/// use asar::AsarReader;
+	/// use std::path::Path;
 	///
-	/// fn main() -> Result<()> {
-	/// 	let asar_file = fs::read("archive.asar")?;
-	/// 	let asar = AsarReader::new(&asar_file)?;
-	/// 	let file_info = asar.read(Path::new("hello.txt")).unwrap();
-	/// 	let integrity = file_info.integrity();
-	/// 	assert_eq!(integrity.hash(), b"\xf6\x95\x2d\x6e\xef\x55\x5d\xdd\x87\xac\xa6\x6e\x56\xb9\x15\x30\x22\x2d\x6e\x31\x84\x14\x81\x6f\x3b\xa7\xcf\x5b\xf6\x94\xbf\x0f");
-	/// 	Ok(())
-	/// }
+	/// # let asar_file = fs::read("archive.asar")?;
+	/// # let asar = AsarReader::new(&asar_file)?;
+	/// let file_info = asar.read(Path::new("hello.txt")).unwrap();
+	/// let integrity = file_info.integrity();
+	/// assert_eq!(
+	/// 	integrity.hash(),
+	/// 	b"\xf6\x95\x2d\x6e\xef\x55\x5d\xdd\x87\xac\xa6\x6e\x56\xb9\x15\x30\x22\
+	/// x2d\x6e\x31\x84\x14\x81\x6f\x3b\xa7\xcf\x5b\xf6\x94\xbf\x0f"
+	/// );
+	/// # Ok::<(), asar::Error>(())
 	/// ```
 	#[inline]
 	pub const fn integrity(&self) -> &FileIntegrity {
