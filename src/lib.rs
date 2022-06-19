@@ -75,7 +75,7 @@ pub mod error;
 /// Header parsing for asar archives.
 pub mod header;
 #[cfg(feature = "integrity")]
-pub(crate) mod integrity;
+pub mod integrity;
 /// Reading asar archives.
 pub mod reader;
 #[cfg(feature = "write")]
