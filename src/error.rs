@@ -27,6 +27,8 @@ pub enum Error {
 	},
 	#[error("File '{}' has already been written", .0.display())]
 	FileAlreadyWritten(PathBuf),
+	#[error("Invalid hash algorithm: '{}'", .0)]
+	InvalidHashAlgorithm(String),
 }
 
 impl Clone for Error {
@@ -47,6 +49,7 @@ impl Clone for Error {
 				actual: actual.clone(),
 			},
 			Self::FileAlreadyWritten(path) => Self::FileAlreadyWritten(path.clone()),
+			Self::InvalidHashAlgorithm(alg) => Self::InvalidHashAlgorithm(alg.clone()),
 		}
 	}
 }
@@ -87,6 +90,9 @@ impl PartialEq for Error {
 			}
 			(Self::FileAlreadyWritten(path), Self::FileAlreadyWritten(other_path)) => {
 				path == other_path
+			}
+			(Self::InvalidHashAlgorithm(alg), Self::InvalidHashAlgorithm(other_alg)) => {
+				alg == other_alg
 			}
 			_ => false,
 		}
