@@ -29,6 +29,9 @@ pub fn pack(args: PackArgs) -> Result<()> {
 	for entry in WalkDir::new(&args.dir) {
 		let entry = entry.wrap_err("failed to get directory entry")?;
 		let path = entry.path();
+		if !path.is_file() {
+			continue;
+		}
 		let stripped_path = path.strip_prefix(&args.dir).wrap_err_with(|| {
 			format!(
 				"'{}' is not a prefix of '{}'",
@@ -55,7 +58,7 @@ pub fn pack(args: PackArgs) -> Result<()> {
 		}
 		let file = fs::read(path).wrap_err_with(|| format!("failed to read {}", path.display()))?;
 
-		asar.write_file(path, &file, is_executable::is_executable(path))
+		asar.write_file(stripped_path, &file, is_executable::is_executable(path))
 			.wrap_err_with(|| format!("failed to write {} to asar", path.display()))?;
 	}
 
