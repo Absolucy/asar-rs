@@ -15,6 +15,8 @@ fn main() -> Result<()> {
 		AppSubcommand::Extract(args) => {
 			app::extract::extract(args).wrap_err("failed to extract archive")
 		}
-		_ => unimplemented!(),
+		AppSubcommand::ExtractFile(args) => {
+			app::extract_file::extract_file(args).wrap_err("failed to extract file from archive")
+		}
 	}
 }
