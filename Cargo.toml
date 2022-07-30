@@ -9,12 +9,12 @@ license = "Apache-2.0 OR MIT"
 [dependencies]
 byteorder = "1"
 clap = { version = "3", features = ["derive"] }
-color-eyre = "0.6.1"
+color-eyre = "0.6"
 hex = "0.4"
 is_executable = "1.0.1"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-serde_with = { version = "1", features = ["hex"] }
+serde_with = { version = "2", features = ["hex"] }
 sha2 = { version = "0.10", optional = true }
 thiserror = "1"
 walkdir = "2"

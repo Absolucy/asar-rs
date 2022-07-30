@@ -69,6 +69,11 @@
 //!    archive, failing if any integrity check fails.
 //!  - `write` - Enable writing an asar archive. **Enabled by default**, also
 //!    enables `integrity`.
+//!
+//! # License
+//!
+//! `asar` is licensed under either the [MIT license](LICENSE-MIT) or the
+//! [Apache License 2.0](LICENSE-APACHE), at the choice of the user.
 
 /// Error handling for parsing, reading, and writing asar archives.
 pub mod error;
