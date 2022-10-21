@@ -66,3 +66,7 @@ fn main() -> Result<()> {
 [Apache License 2.0](LICENSE-APACHE), at the choice of the user.
 
 License: Apache-2.0 OR MIT
+
+### Amendment
+
+I, @Absolucy, fully give permission for any of my code (including the entirety of this project, rand-wyrand), anywhere, no matter the license, to be used to train machine learning models intended to be used for general-purpose programming or code analysis.
