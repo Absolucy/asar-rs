@@ -97,12 +97,12 @@ impl AsarWriter {
 			self.offset,
 			bytes.len(),
 			executable,
-			FileIntegrity::new(
+			Some(FileIntegrity::new(
 				self.hasher,
 				self.hasher.hash(bytes),
 				BLOCK_SIZE,
 				self.hasher.hash_blocks(BLOCK_SIZE, bytes),
-			),
+			)),
 		);
 		self.buffer.extend_from_slice(bytes);
 		self.offset += bytes.len();

@@ -102,7 +102,10 @@ impl<'a> AsarReader<'a> {
 	/// for (path, file_info) in asar.files() {
 	/// 	println!("file {}", path.display());
 	/// 	println!("\t{} bytes", file_info.data().len());
-	/// 	println!("\thash: {}", hex::encode(file_info.integrity().hash()));
+	/// 	println!(
+	/// 		"\thash: {}",
+	/// 		hex::encode(file_info.integrity().unwrap().hash())
+	/// 	);
 	/// }
 	/// # Ok::<(), asar::Error>(())
 	/// ```
@@ -182,7 +185,7 @@ impl<'a> AsarReader<'a> {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct AsarFile<'a> {
 	data: &'a [u8],
-	integrity: FileIntegrity,
+	integrity: Option<FileIntegrity>,
 }
 
 impl<'a> AsarFile<'a> {
@@ -216,7 +219,7 @@ impl<'a> AsarFile<'a> {
 	/// # let asar_file = fs::read("archive.asar")?;
 	/// # let asar = AsarReader::new(&asar_file)?;
 	/// let file_info = asar.read(Path::new("hello.txt")).unwrap();
-	/// let integrity = file_info.integrity();
+	/// let integrity = file_info.integrity().unwrap();
 	/// assert_eq!(
 	/// 	integrity.hash(),
 	/// 	b"\xf6\x95\x2d\x6e\xef\x55\x5d\xdd\x87\xac\xa6\x6e\x56\xb9\x15\x30\x22\
@@ -225,8 +228,8 @@ impl<'a> AsarFile<'a> {
 	/// # Ok::<(), asar::Error>(())
 	/// ```
 	#[inline]
-	pub const fn integrity(&self) -> &FileIntegrity {
-		&self.integrity
+	pub const fn integrity(&self) -> Option<&FileIntegrity> {
+		self.integrity.as_ref()
 	}
 }
 
@@ -287,7 +290,7 @@ fn recursive_read<'a>(
 			}
 			file_map.insert(path, AsarFile {
 				data,
-				integrity: file.integrity().clone(),
+				integrity: file.integrity().cloned(),
 			});
 		}
 		Header::Directory { files } => {

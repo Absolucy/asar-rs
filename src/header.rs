@@ -73,7 +73,8 @@ pub struct File {
 	#[serde(skip_serializing_if = "is_false", default = "default_false")]
 	executable: bool,
 	/// Integrity details of the file, such as hashes.
-	integrity: FileIntegrity,
+	#[serde(skip_serializing_if = "Option::is_none")]
+	integrity: Option<FileIntegrity>,
 }
 
 impl File {
@@ -81,7 +82,7 @@ impl File {
 		offset: usize,
 		size: usize,
 		executable: bool,
-		integrity: FileIntegrity,
+		integrity: Option<FileIntegrity>,
 	) -> Self {
 		Self {
 			offset,
@@ -180,13 +181,16 @@ impl File {
 	/// #     Header::File(file) => file,
 	/// #     _ => panic!("Not a file"),
 	/// # };
-	/// println!("File hash: {}", hex::encode(file.integrity().hash()));
+	/// println!(
+	/// 	"File hash: {}",
+	/// 	hex::encode(file.integrity().unwrap().hash())
+	/// );
 	///
 	/// # Ok::<(), asar::Error>(())
 	/// ```
 	#[inline]
-	pub const fn integrity(&self) -> &FileIntegrity {
-		&self.integrity
+	pub const fn integrity(&self) -> Option<&FileIntegrity> {
+		self.integrity.as_ref()
 	}
 }
 
@@ -238,7 +242,7 @@ impl FileIntegrity {
 	/// #     Header::File(file) => file,
 	/// #     _ => panic!("Not a file"),
 	/// # };
-	/// # let integrity = file.integrity();
+	/// # let integrity = file.integrity().unwrap();
 	/// println!("This file is hashed using {}", integrity.algorithm());
 	///
 	/// # Ok::<(), asar::Error>(())
@@ -262,7 +266,7 @@ impl FileIntegrity {
 	/// #     Header::File(file) => file,
 	/// #     _ => panic!("Not a file"),
 	/// # };
-	/// # let integrity = file.integrity();
+	/// # let integrity = file.integrity().unwrap();
 	/// println!("File hash: {}", hex::encode(integrity.hash()));
 	///
 	/// # Ok::<(), asar::Error>(())
@@ -288,7 +292,7 @@ impl FileIntegrity {
 	/// #     Header::File(file) => file,
 	/// #     _ => panic!("Not a file"),
 	/// # };
-	/// # let integrity = file.integrity();
+	/// # let integrity = file.integrity().unwrap();
 	/// println!(
 	/// 	"This file has a block size of {} KiB",
 	/// 	integrity.block_size() / 1024
@@ -315,7 +319,7 @@ impl FileIntegrity {
 	/// #     Header::File(file) => file,
 	/// #     _ => panic!("Not a file"),
 	/// # };
-	/// # let integrity = file.integrity();
+	/// # let integrity = file.integrity().unwrap();
 	/// let blocks = integrity.blocks();
 	/// println!("This file has {} blocks", blocks.len());
 	/// for (idx, block) in blocks.iter().enumerate() {
