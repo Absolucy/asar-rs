@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 use crate::{
 	error::{Error, Result},
-	header::{File, FileIntegrity, HashAlgorithm, Header},
+	header::{File, FileIntegrity, FileLocation, HashAlgorithm, Header},
 	reader::AsarReader,
 };
 use byteorder::{LittleEndian, WriteBytesExt};
@@ -94,7 +94,9 @@ impl AsarWriter {
 			return Err(Error::FileAlreadyWritten(path.to_path_buf()));
 		}
 		let file = File::new(
-			self.offset,
+			FileLocation::Offset {
+				offset: self.offset,
+			},
 			bytes.len(),
 			executable,
 			Some(FileIntegrity::new(
@@ -230,7 +232,7 @@ mod test {
 	pub fn round_trip() {
 		let (header_a, offset_a) =
 			Header::read(&mut &*TEST_ASAR).expect("failed to read asar header");
-		let reader_a = AsarReader::new_from_header(header_a, offset_a, TEST_ASAR)
+		let reader_a = AsarReader::new_from_header(header_a, offset_a, TEST_ASAR, None)
 			.expect("failed to read asar");
 		let mut writer = AsarWriter::new();
 		writer
@@ -242,8 +244,8 @@ mod test {
 		let out_ref = out.as_ref() as &[u8];
 		let (header_b, offset_b) =
 			Header::read(&mut &*out_ref).expect("failed to read asar header");
-		let reader_b =
-			AsarReader::new_from_header(header_b, offset_b, &out).expect("failed to read new asar");
+		let reader_b = AsarReader::new_from_header(header_b, offset_b, &out, None)
+			.expect("failed to read new asar");
 		let files_a = reader_a.files();
 		let files_b = reader_b.files();
 		let mut missing = Vec::new();

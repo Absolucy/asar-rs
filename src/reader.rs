@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 use crate::{
 	error::{Error, Result},
-	header::{FileIntegrity, Header},
+	header::{FileIntegrity, FileLocation, Header},
 };
 use std::{
+	borrow::Cow,
 	collections::BTreeMap,
 	path::{Path, PathBuf},
 };
@@ -37,28 +38,35 @@ pub struct AsarReader<'a> {
 	header: Header,
 	directories: BTreeMap<PathBuf, Vec<PathBuf>>,
 	files: BTreeMap<PathBuf, AsarFile<'a>>,
+	asar_path: Option<PathBuf>,
 }
 
 impl<'a> AsarReader<'a> {
 	/// Parse and read an asar archive from a byte buffer.
 	///
+	/// If you care about unpacked files, pass a `asar_path` containing the path
+	/// to the asar archive.
+	///
 	/// ## Example
 	///
 	/// ```rust,no_run
 	/// use asar::{AsarReader, Header};
-	/// use std::fs;
+	/// use std::{fs, path::PathBuf};
 	///
 	/// let asar_file = fs::read("archive.asar")?;
-	/// let asar = AsarReader::new(&asar_file)?;
+	/// let asar = AsarReader::new(&asar_file, PathBuf::from("./archive.asar"))?;
 	/// # Ok::<(), asar::Error>(())
 	/// ```
-	pub fn new(data: &'a [u8]) -> Result<Self> {
+	pub fn new(data: &'a [u8], asar_path: impl Into<Option<PathBuf>>) -> Result<Self> {
 		let (header, offset) = Header::read(&mut &data[..])?;
-		Self::new_from_header(header, offset, data)
+		Self::new_from_header(header, offset, data, asar_path)
 	}
 
 	/// Read an asar archive from a byte buffer, using the given header and
 	/// offset.
+	///
+	/// If you care about unpacked files, pass a `asar_path` containing the path
+	/// to the asar archive.
 	///
 	/// ## Example
 	///
@@ -71,9 +79,15 @@ impl<'a> AsarReader<'a> {
 	/// let asar = AsarReader::new_from_header(header, offset, &asar_file)?;
 	/// # Ok::<(), asar::Error>(())
 	/// ```
-	pub fn new_from_header(header: Header, offset: usize, data: &'a [u8]) -> Result<Self> {
+	pub fn new_from_header(
+		header: Header,
+		offset: usize,
+		data: &'a [u8],
+		asar_path: impl Into<Option<PathBuf>>,
+	) -> Result<Self> {
 		let mut files = BTreeMap::new();
 		let mut directories = BTreeMap::new();
+		let asar_path = asar_path.into();
 		recursive_read(
 			PathBuf::new(),
 			&mut files,
@@ -81,11 +95,13 @@ impl<'a> AsarReader<'a> {
 			&header,
 			offset,
 			data,
+			asar_path.as_deref(),
 		)?;
 		Ok(Self {
 			header,
 			files,
 			directories,
+			asar_path,
 		})
 	}
 
@@ -184,7 +200,7 @@ impl<'a> AsarReader<'a> {
 /// contents, and the integrity details containing file hashes.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct AsarFile<'a> {
-	data: &'a [u8],
+	data: Cow<'a, [u8]>,
 	integrity: Option<FileIntegrity>,
 }
 
@@ -204,8 +220,8 @@ impl<'a> AsarFile<'a> {
 	/// # Ok::<(), asar::Error>(())
 	/// ```
 	#[inline]
-	pub const fn data(&self) -> &[u8] {
-		self.data
+	pub fn data(&self) -> &[u8] {
+		self.data.as_ref()
 	}
 
 	/// Integrity details of the file, such as hashes.
@@ -240,23 +256,39 @@ fn recursive_read<'a>(
 	header: &Header,
 	begin_offset: usize,
 	data: &'a [u8],
+	asar_path: Option<&Path>,
 ) -> Result<()> {
 	match header {
 		Header::File(file) => {
-			let start = begin_offset + file.offset();
-			let end = start + file.size();
-			if data.len() < end {
-				println!(
-					"file truncated path='{}', data_len={}, start={}, size={}, end={}",
-					path.display(),
-					data.len(),
-					start,
-					file.size(),
-					end
-				);
-				return Err(Error::Truncated);
-			}
-			let data = &data[start..end];
+			let data = match file.location() {
+				FileLocation::Offset { offset } => {
+					let start = begin_offset + offset;
+					let end = start + file.size();
+					if data.len() < end {
+						println!(
+							"file truncated path='{}', data_len={}, start={}, size={}, end={}",
+							path.display(),
+							data.len(),
+							start,
+							file.size(),
+							end
+						);
+						return Err(Error::Truncated);
+					}
+					Cow::Borrowed(&data[start..end])
+				}
+				FileLocation::Unpacked { .. } => match asar_path {
+					Some(asar_path) => {
+						std::fs::read(asar_path.with_extension("asar.unpacked").join(&path))
+							.map(Cow::Owned)
+							.map_err(|err| Error::UnpackedIoError {
+								path: path.clone(),
+								err,
+							})?
+					}
+					None => Cow::Borrowed(&[] as &[u8]),
+				},
+			};
 			#[cfg(feature = "check-integrity-on-read")]
 			{
 				let integrity = file.integrity();
@@ -300,7 +332,15 @@ fn recursive_read<'a>(
 					.entry(path.clone())
 					.or_default()
 					.push(file_path.clone());
-				recursive_read(file_path, file_map, dir_map, header, begin_offset, data)?;
+				recursive_read(
+					file_path,
+					file_map,
+					dir_map,
+					header,
+					begin_offset,
+					data,
+					asar_path,
+				)?;
 			}
 		}
 	}
@@ -317,7 +357,7 @@ pub mod test {
 
 	#[test]
 	fn test_reading() {
-		let reader = AsarReader::new(TEST_ASAR).expect("failed to read asar");
+		let reader = AsarReader::new(TEST_ASAR, None).expect("failed to read asar");
 		for (path, file) in reader.files() {
 			let real_file = ASAR_CONTENTS
 				.get_file(path)

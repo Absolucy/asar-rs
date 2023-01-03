@@ -4,10 +4,15 @@ use asar::AsarReader;
 use color_eyre::{eyre::WrapErr, Result};
 use std::fs;
 
-pub fn extract(args: ExtractArgs) -> Result<()> {
+pub fn extract(args: ExtractArgs, read_unpacked: bool) -> Result<()> {
 	let file = fs::read(&args.archive)
 		.wrap_err_with(|| format!("failed to open archive {}", args.archive.display()))?;
-	let reader = AsarReader::new(&file).wrap_err("failed to read archive")?;
+	let asar_path = if read_unpacked {
+		Some(args.archive)
+	} else {
+		None
+	};
+	let reader = AsarReader::new(&file, asar_path).wrap_err("failed to read archive")?;
 	for (path, file) in reader.files() {
 		let out_path = args.destination.join(path);
 		if !out_path.starts_with(&args.destination) {

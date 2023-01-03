@@ -10,13 +10,16 @@ fn main() -> Result<()> {
 	let args = AppArgs::parse();
 
 	match args.subcommand {
-		AppSubcommand::Pack(args) => app::pack::pack(args).wrap_err("failed to pack archive"),
-		AppSubcommand::List(args) => app::list::list(args).wrap_err("failed to list archive"),
-		AppSubcommand::Extract(args) => {
-			app::extract::extract(args).wrap_err("failed to extract archive")
+		AppSubcommand::Pack(subargs) => app::pack::pack(subargs).wrap_err("failed to pack archive"),
+		AppSubcommand::List(subargs) => {
+			app::list::list(subargs, args.read_unpacked).wrap_err("failed to list archive")
 		}
-		AppSubcommand::ExtractFile(args) => {
-			app::extract_file::extract_file(args).wrap_err("failed to extract file from archive")
+		AppSubcommand::Extract(subargs) => {
+			app::extract::extract(subargs, args.read_unpacked).wrap_err("failed to extract archive")
+		}
+		AppSubcommand::ExtractFile(subargs) => {
+			app::extract_file::extract_file(subargs, args.read_unpacked)
+				.wrap_err("failed to extract file from archive")
 		}
 	}
 }

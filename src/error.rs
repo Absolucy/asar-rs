@@ -8,6 +8,8 @@ use thiserror::Error as ThisError;
 pub enum Error {
 	#[error("I/O error: {0}")]
 	Io(#[from] IoError),
+	#[error("I/O error while reading unpacked file '{}': {}", .path.display(), .err)]
+	UnpackedIoError { path: PathBuf, err: IoError },
 	#[error("JSON error: {0}")]
 	Json(#[from] JsonError),
 	#[error("Archive is truncated")]
@@ -35,6 +37,10 @@ impl Clone for Error {
 	fn clone(&self) -> Self {
 		match self {
 			Self::Io(io_err) => Self::Io(IoError::new(io_err.kind(), io_err.to_string())),
+			Self::UnpackedIoError { path, err } => Self::UnpackedIoError {
+				path: path.clone(),
+				err: IoError::new(err.kind(), err.to_string()),
+			},
 			Self::Json(json_err) => Self::Json(JsonError::custom(json_err.to_string())),
 			Self::Truncated => Self::Truncated,
 			Self::HashMismatch {
@@ -61,6 +67,18 @@ impl PartialEq for Error {
 				io_err.kind() == other_io_err.kind()
 					&& io_err.raw_os_error() == other_io_err.raw_os_error()
 					&& io_err.to_string() == other_io_err.to_string()
+			}
+			(
+				Self::UnpackedIoError { path, err },
+				Self::UnpackedIoError {
+					path: other_path,
+					err: other_err,
+				},
+			) => {
+				path == other_path
+					&& err.kind() == other_err.kind()
+					&& err.raw_os_error() == other_err.raw_os_error()
+					&& err.to_string() == other_err.to_string()
 			}
 			(Self::Json(json_err), Self::Json(other_json_err)) => {
 				json_err.line() == other_json_err.line()

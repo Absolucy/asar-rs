@@ -5,6 +5,9 @@ use std::path::PathBuf;
 #[derive(Parser)]
 #[clap(author, version, about, long_about = None, propagate_version = true)]
 pub struct AppArgs {
+	/// Whether to read unpacked files or not.
+	#[clap(short = 'u', long)]
+	pub read_unpacked: bool,
 	#[clap(subcommand)]
 	pub subcommand: AppSubcommand,
 }

@@ -58,15 +58,45 @@ impl Header {
 	}
 }
 
+#[serde_as]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum FileLocation {
+	/// This file is located in the asar archive, at an offset from the end of
+	/// the asar header.
+	Offset {
+		/// The offset from the end of the header that this file is located at.
+		#[serde_as(as = "DisplayFromStr")]
+		offset: usize,
+	},
+	/// This file is already unpacked from the asar archive.
+	Unpacked {
+		#[serde(skip_serializing_if = "is_false")]
+		unpacked: bool,
+	},
+}
+
+impl FileLocation {
+	#[inline]
+	pub const fn offset(offset: usize) -> Self {
+		FileLocation::Offset { offset }
+	}
+
+	#[inline]
+	pub const fn unpacked() -> Self {
+		FileLocation::Unpacked { unpacked: true }
+	}
+}
+
 /// This struct contains details about a file in an asar archive, such as
 /// where it is located in the archive, its size, whether its executable or not,
 /// and integrity details such as cryptographic hashes.
-#[serde_as]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct File {
-	/// The offset from the end of the header that this file is located at.
-	#[serde_as(as = "DisplayFromStr")]
-	offset: usize,
+	/// The location of the file - either at an offset in the asar archive, or
+	/// as an unpacked file.
+	#[serde(flatten)]
+	location: FileLocation,
 	/// The total size of the file.
 	size: usize,
 	/// Whether this file is executable or not.
@@ -79,20 +109,28 @@ pub struct File {
 
 impl File {
 	pub(crate) const fn new(
-		offset: usize,
+		location: FileLocation,
 		size: usize,
 		executable: bool,
 		integrity: Option<FileIntegrity>,
 	) -> Self {
 		Self {
-			offset,
+			location,
 			size,
 			executable,
 			integrity,
 		}
 	}
 
+	#[inline]
+	pub const fn location(&self) -> FileLocation {
+		self.location
+	}
+
 	/// The offset from the end of the header that this file is located at.
+	///
+	/// If this returns `None`, then the file is 'unpacked', meaning it's not in
+	/// the archive.
 	///
 	/// Note that this is represented as a [`String`] in the JSON format,
 	/// but we convert it to/from a [`usize`] when we read/write the JSON.
@@ -114,8 +152,39 @@ impl File {
 	/// # Ok::<(), asar::Error>(())
 	/// ```
 	#[inline]
-	pub const fn offset(&self) -> usize {
-		self.offset
+	pub const fn offset(&self) -> Option<usize> {
+		match self.location {
+			FileLocation::Offset { offset } => Some(offset),
+			_ => None,
+		}
+	}
+
+	/// Whether this file is 'unpacked' or not.
+	///
+	/// Unpacked files are stored on the actual file system, adjacent to the
+	/// asar, in a folder named `[asar name].asar.unpacked`.
+	///
+	/// ## Example
+	///
+	/// ```rust,no_run
+	/// # use asar::Header;
+	/// # use std::fs;
+	/// #
+	/// # let asar_file = fs::read("archive.asar")?;
+	/// # let (header, _) = Header::read(&mut &asar_file[..])?;
+	/// # let file = match header {
+	/// #     Header::File(file) => file,
+	/// #     _ => panic!("Not a file"),
+	/// # };
+	/// if file.unpacked() {
+	/// 	println!("File is at `./archive.asar.unpacked/file`!");
+	/// }
+	///
+	/// # Ok::<(), asar::Error>(())
+	/// ```
+	#[inline]
+	pub const fn unpacked(&self) -> bool {
+		matches!(self.location, FileLocation::Unpacked { .. })
 	}
 
 	/// The total size of the file, in bytes.
