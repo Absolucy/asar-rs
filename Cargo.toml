@@ -1,7 +1,7 @@
 [package]
 name = "asar"
 description = "A crate to read and write asar archives, often used by Electron apps."
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 authors = ["Lucy <lucy@absolucy.moe>"]
 license = "Apache-2.0 OR MIT"
@@ -10,10 +10,10 @@ homepage = "https://github.com/Absolucy/asar-rs"
 
 [dependencies]
 byteorder = "1"
-clap = { version = "3", features = ["derive"] }
+clap = { version = "4", features = ["derive"] }
 color-eyre = "0.6"
 hex = "0.4"
-is_executable = "1.0.1"
+is_executable = "1"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 serde_with = { version = "2", features = ["hex"] }
