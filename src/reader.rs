@@ -38,6 +38,7 @@ pub struct AsarReader<'a> {
 	header: Header,
 	directories: BTreeMap<PathBuf, Vec<PathBuf>>,
 	files: BTreeMap<PathBuf, AsarFile<'a>>,
+	symlinks: BTreeMap<PathBuf, SymLink>,
 	asar_path: Option<PathBuf>,
 }
 
@@ -87,11 +88,13 @@ impl<'a> AsarReader<'a> {
 	) -> Result<Self> {
 		let mut files = BTreeMap::new();
 		let mut directories = BTreeMap::new();
+		let mut symlinks = BTreeMap::new();
 		let asar_path = asar_path.into();
 		recursive_read(
 			PathBuf::new(),
 			&mut files,
 			&mut directories,
+			&mut symlinks,
 			&header,
 			offset,
 			data,
@@ -101,6 +104,7 @@ impl<'a> AsarReader<'a> {
 			header,
 			files,
 			directories,
+			symlinks,
 			asar_path,
 		})
 	}
@@ -249,10 +253,16 @@ impl<'a> AsarFile<'a> {
 	}
 }
 
+#[derive(Debug, Clone, PartialEq)]
+pub struct SymLink {
+	link: String,
+}
+
 fn recursive_read<'a>(
 	path: PathBuf,
 	file_map: &mut BTreeMap<PathBuf, AsarFile<'a>>,
 	dir_map: &mut BTreeMap<PathBuf, Vec<PathBuf>>,
+	symlink_map: &mut BTreeMap<PathBuf, SymLink>,
 	header: &Header,
 	begin_offset: usize,
 	data: &'a [u8],
@@ -336,12 +346,16 @@ fn recursive_read<'a>(
 					file_path,
 					file_map,
 					dir_map,
+					symlink_map,
 					header,
 					begin_offset,
 					data,
 					asar_path,
 				)?;
 			}
+		},
+		Header::Link { link } => {
+			symlink_map.insert(path, SymLink { link: link.clone() });
 		}
 	}
 	Ok(())

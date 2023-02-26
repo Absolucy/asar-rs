@@ -23,6 +23,7 @@ pub(crate) static TEST_ASAR: &[u8] = include_bytes!("../data/test.asar");
 pub enum Header {
 	File(File),
 	Directory { files: HashMap<String, Self> },
+	Link { link: String },
 }
 
 impl Header {

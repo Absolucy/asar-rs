@@ -204,6 +204,7 @@ fn recursive_add_to_header(mut path: VecDeque<String>, file: File, header: &mut 
 	let header_map = match header {
 		Header::File(_) => return,
 		Header::Directory { files } => files,
+		Header::Link { link: _ } => return,
 	};
 	match path.pop_front() {
 		Some(name) if path.is_empty() => {
