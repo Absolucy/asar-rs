@@ -15,6 +15,7 @@ const BLOCK_SIZE: usize = 4 * 1024 * 1024; // 4 MiB
 
 pub struct AsarWriter {
 	files: BTreeMap<PathBuf, File>,
+	symlinks: BTreeMap<PathBuf, PathBuf>,
 	buffer: Vec<u8>,
 	offset: usize,
 	hasher: HashAlgorithm,
@@ -35,6 +36,7 @@ impl AsarWriter {
 	pub fn new_with_algorithm(hasher: HashAlgorithm) -> Self {
 		Self {
 			files: BTreeMap::new(),
+			symlinks: BTreeMap::new(),
 			buffer: Vec::new(),
 			offset: 0,
 			hasher,
@@ -87,6 +89,12 @@ impl AsarWriter {
 		executable: bool,
 	) -> Result<()> {
 		self.write_file_impl(path.as_ref(), bytes.as_ref(), executable)
+	}
+
+	pub fn write_symlink(&mut self, path: impl AsRef<Path>, link: impl AsRef<Path>) -> Result<()> {
+		self.symlinks
+			.insert(path.as_ref().to_path_buf(), link.as_ref().to_path_buf());
+		Ok(())
 	}
 
 	fn write_file_impl(&mut self, path: &Path, bytes: &[u8], executable: bool) -> Result<()> {
@@ -146,7 +154,11 @@ impl AsarWriter {
 		let mut header = Header::new();
 		for (path, file) in self.files {
 			let path = path_to_reverse_components(&path)?;
-			recursive_add_to_header(path, file, &mut header);
+			recursive_add_to_header(path, Header::File(file), &mut header);
+		}
+		for (path, link) in self.symlinks {
+			let path = path_to_reverse_components(&path)?;
+			recursive_add_to_header(path, Header::Link { link }, &mut header);
 		}
 		let mut written = 0;
 		let mut json = serde_json::to_string(&header)?.into_bytes();
@@ -178,6 +190,7 @@ impl Default for AsarWriter {
 	fn default() -> Self {
 		Self {
 			files: BTreeMap::new(),
+			symlinks: BTreeMap::new(),
 			offset: 0,
 			buffer: Vec::new(),
 			hasher: HashAlgorithm::Sha256,
@@ -200,18 +213,18 @@ fn path_to_reverse_components(path: &Path) -> Result<VecDeque<String>> {
 		.collect())
 }
 
-fn recursive_add_to_header(mut path: VecDeque<String>, file: File, header: &mut Header) {
+fn recursive_add_to_header(mut path: VecDeque<String>, file_or_symlink: Header, header: &mut Header) {
 	let header_map = match header {
 		Header::Directory { files } => files,
 		_ => return,
 	};
 	match path.pop_front() {
 		Some(name) if path.is_empty() => {
-			header_map.insert(name, Header::File(file));
+			header_map.insert(name, file_or_symlink);
 		}
 		Some(name) => {
 			let new_header = header_map.entry(name).or_insert_with(Header::new);
-			recursive_add_to_header(path, file, new_header);
+			recursive_add_to_header(path, file_or_symlink, new_header);
 		}
 		None => {
 			unreachable!("path must have at least one component");

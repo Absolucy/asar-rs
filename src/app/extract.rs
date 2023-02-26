@@ -37,13 +37,15 @@ pub fn extract(args: ExtractArgs, read_unpacked: bool) -> Result<()> {
 		}
 		#[cfg(all(unix))]
 		{
-			std::os::unix::fs::symlink(out_link, &out_path)
-				.wrap_err_with(|| format!("failed to write symbolic link {}", out_path.display()))?;
+			std::os::unix::fs::symlink(out_link, &out_path).wrap_err_with(|| {
+				format!("failed to write symbolic link {}", out_path.display())
+			})?;
 		}
 		#[cfg(all(windows))]
 		{
-			std::os::windows::fs::symlink_file(out_link, &out_path)
-				.wrap_err_with(|| format!("failed to write symbolic link {}", out_path.display()))?;
+			std::os::windows::fs::symlink_file(out_link, &out_path).wrap_err_with(|| {
+				format!("failed to write symbolic link {}", out_path.display())
+			})?;
 		}
 	}
 

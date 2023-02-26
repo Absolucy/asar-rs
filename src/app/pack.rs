@@ -56,6 +56,21 @@ pub fn pack(args: PackArgs) -> Result<()> {
 				continue;
 			}
 		}
+
+		if path.is_symlink() {
+			let link = std::fs::read_link(path).unwrap();
+			let stripped_link = link.strip_prefix(&args.dir).wrap_err_with(|| {
+				format!(
+					"'{}' is not a prefix of '{}'",
+					args.dir.display(),
+					link.display()
+				)
+			})?;
+			asar.write_symlink(stripped_path, stripped_link)
+				.wrap_err_with(|| format!("failed to write {} to asar", path.display()))?;
+			continue;
+		}
+
 		let file = fs::read(path).wrap_err_with(|| format!("failed to read {}", path.display()))?;
 
 		asar.write_file(stripped_path, &file, is_executable::is_executable(path))

@@ -6,8 +6,8 @@ use serde_with::{hex::Hex, serde_as, DisplayFromStr};
 use std::{
 	collections::HashMap,
 	fmt::{self, Display},
-	str::FromStr,
 	path::PathBuf,
+	str::FromStr,
 };
 
 #[cfg(test)]
@@ -24,7 +24,7 @@ pub(crate) static TEST_ASAR: &[u8] = include_bytes!("../data/test.asar");
 pub enum Header {
 	File(File),
 	Directory { files: HashMap<String, Self> },
-	Link { link: PathBuf }
+	Link { link: PathBuf },
 }
 
 impl Header {

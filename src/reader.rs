@@ -349,10 +349,13 @@ fn recursive_read<'a>(
 					});
 				}
 			}
-			file_map.insert(path, AsarFile {
-				data,
-				integrity: file.integrity().cloned(),
-			});
+			file_map.insert(
+				path,
+				AsarFile {
+					data,
+					integrity: file.integrity().cloned(),
+				},
+			);
 		}
 		Header::Directory { files } => {
 			for (name, header) in files {
@@ -372,7 +375,7 @@ fn recursive_read<'a>(
 					asar_path,
 				)?;
 			}
-		},
+		}
 		Header::Link { link } => {
 			symlink_map.insert(path, link.clone());
 		}
