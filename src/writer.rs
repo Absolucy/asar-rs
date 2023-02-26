@@ -202,8 +202,8 @@ fn path_to_reverse_components(path: &Path) -> Result<VecDeque<String>> {
 
 fn recursive_add_to_header(mut path: VecDeque<String>, file: File, header: &mut Header) {
 	let header_map = match header {
-		Header::File(_) => return,
 		Header::Directory { files } => files,
+		_ => return,
 	};
 	match path.pop_front() {
 		Some(name) if path.is_empty() => {

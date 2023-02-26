@@ -7,6 +7,7 @@ use std::{
 	collections::HashMap,
 	fmt::{self, Display},
 	str::FromStr,
+	path::PathBuf,
 };
 
 #[cfg(test)]
@@ -23,6 +24,7 @@ pub(crate) static TEST_ASAR: &[u8] = include_bytes!("../data/test.asar");
 pub enum Header {
 	File(File),
 	Directory { files: HashMap<String, Self> },
+	Link { link: PathBuf }
 }
 
 impl Header {
