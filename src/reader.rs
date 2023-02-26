@@ -38,6 +38,7 @@ pub struct AsarReader<'a> {
 	header: Header,
 	directories: BTreeMap<PathBuf, Vec<PathBuf>>,
 	files: BTreeMap<PathBuf, AsarFile<'a>>,
+	symlinks: BTreeMap<PathBuf, PathBuf>,
 	asar_path: Option<PathBuf>,
 }
 
@@ -103,6 +104,7 @@ impl<'a> AsarReader<'a> {
 			header,
 			files,
 			directories,
+			symlinks,
 			asar_path,
 		})
 	}
@@ -155,6 +157,27 @@ impl<'a> AsarReader<'a> {
 		&self.directories
 	}
 
+	/// Gets all symbolic links in the asar.
+	///
+	/// ## Example
+	///
+	/// ```rust,no_run
+	/// # use std::fs;
+	/// use asar::AsarReader;
+	///
+	/// # let asar_file = fs::read("archive.asar")?;
+	/// # let asar = AsarReader::new(&asar_file)?;
+	/// for (path, link) in asar.symlinks() {
+	/// 	println!("file {}", path.display());
+	/// 	println!("\tlink {}", link.display());
+	/// }
+	/// # Ok::<(), asar::Error>(())
+	/// ```
+	#[inline]
+	pub const fn symlinks(&self) -> &BTreeMap<PathBuf, PathBuf> {
+		&self.symlinks
+	}
+
 	/// Gets information about a file.
 	///
 	/// ## Example
@@ -172,6 +195,9 @@ impl<'a> AsarReader<'a> {
 	/// ```
 	#[inline]
 	pub fn read(&self, path: &Path) -> Option<&AsarFile> {
+		if let Some(link) = self.symlinks.get(path) {
+			return self.files.get(link);
+		}
 		self.files.get(path)
 	}
 
