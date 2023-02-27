@@ -27,7 +27,7 @@ use std::{
 ///
 /// fn main() -> Result<()> {
 /// 	let asar_file = fs::read("archive.asar")?;
-/// 	let reader = AsarReader::new(&asar_file)?;
+/// 	let reader = AsarReader::new(&asar_file, None)?;
 ///
 /// 	println!("There are {} files in archive.asar", reader.files().len());
 /// 	Ok(())
@@ -77,7 +77,7 @@ impl<'a> AsarReader<'a> {
 	///
 	/// let asar_file = fs::read("archive.asar")?;
 	/// let (header, offset) = Header::read(&mut &asar_file[..])?;
-	/// let asar = AsarReader::new_from_header(header, offset, &asar_file)?;
+	/// let asar = AsarReader::new_from_header(header, offset, &asar_file, None)?;
 	/// # Ok::<(), asar::Error>(())
 	/// ```
 	pub fn new_from_header(
@@ -118,7 +118,7 @@ impl<'a> AsarReader<'a> {
 	/// use asar::AsarReader;
 	///
 	/// # let asar_file = fs::read("archive.asar")?;
-	/// # let asar = AsarReader::new(&asar_file)?;
+	/// # let asar = AsarReader::new(&asar_file, None)?;
 	/// for (path, file_info) in asar.files() {
 	/// 	println!("file {}", path.display());
 	/// 	println!("\t{} bytes", file_info.data().len());
@@ -143,7 +143,7 @@ impl<'a> AsarReader<'a> {
 	/// use asar::AsarReader;
 	///
 	/// # let asar_file = fs::read("archive.asar")?;
-	/// # let asar = AsarReader::new(&asar_file)?;
+	/// # let asar = AsarReader::new(&asar_file, None)?;
 	/// for (path, contents) in asar.directories() {
 	/// 	println!("dir {}", path.display());
 	/// 	for file in contents {
@@ -166,7 +166,7 @@ impl<'a> AsarReader<'a> {
 	/// use asar::AsarReader;
 	///
 	/// # let asar_file = fs::read("archive.asar")?;
-	/// # let asar = AsarReader::new(&asar_file)?;
+	/// # let asar = AsarReader::new(&asar_file, None)?;
 	/// for (path, link) in asar.symlinks() {
 	/// 	println!("file {}", path.display());
 	/// 	println!("\tlink {}", link.display());
@@ -188,7 +188,7 @@ impl<'a> AsarReader<'a> {
 	/// use std::path::Path;
 	///
 	/// # let asar_file = fs::read("archive.asar")?;
-	/// # let asar = AsarReader::new(&asar_file)?;
+	/// # let asar = AsarReader::new(&asar_file, None)?;
 	/// let file_info = asar.read(Path::new("hello.txt")).unwrap();
 	/// println!("hello.txt is {} bytes", file_info.data().len());
 	/// # Ok::<(), asar::Error>(())
@@ -211,7 +211,7 @@ impl<'a> AsarReader<'a> {
 	/// use std::path::Path;
 	///
 	/// # let asar_file = fs::read("archive.asar")?;
-	/// # let asar = AsarReader::new(&asar_file)?;
+	/// # let asar = AsarReader::new(&asar_file, None)?;
 	/// let contents = asar.read_dir(Path::new("dir a/dir b")).unwrap();
 	/// for file in contents {
 	/// 	println!("file {}", file.display());
@@ -242,7 +242,7 @@ impl<'a> AsarFile<'a> {
 	/// use std::path::Path;
 	///
 	/// # let asar_file = fs::read("archive.asar")?;
-	/// # let asar = AsarReader::new(&asar_file)?;
+	/// # let asar = AsarReader::new(&asar_file, None)?;
 	/// let file_info = asar.read(Path::new("hello.txt")).unwrap();
 	/// assert_eq!(file_info.data(), b"Hello, World!");
 	/// # Ok::<(), asar::Error>(())
@@ -261,7 +261,7 @@ impl<'a> AsarFile<'a> {
 	/// use std::path::Path;
 	///
 	/// # let asar_file = fs::read("archive.asar")?;
-	/// # let asar = AsarReader::new(&asar_file)?;
+	/// # let asar = AsarReader::new(&asar_file, None)?;
 	/// let file_info = asar.read(Path::new("hello.txt")).unwrap();
 	/// let integrity = file_info.integrity().unwrap();
 	/// assert_eq!(

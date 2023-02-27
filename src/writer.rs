@@ -51,7 +51,7 @@ impl AsarWriter {
 	/// use asar::{AsarReader, AsarWriter, Header};
 	///
 	/// # let asar_file = fs::read("archive.asar")?;
-	/// let reader = AsarReader::new(&asar_file)?;
+	/// let reader = AsarReader::new(&asar_file, None)?;
 	/// let mut writer = AsarWriter::new();
 	/// writer.add_from_reader(&reader)?;
 	///

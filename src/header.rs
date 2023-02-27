@@ -149,7 +149,7 @@ impl File {
 	/// #     Header::File(file) => file,
 	/// #     _ => panic!("Not a file"),
 	/// # };
-	/// println!("File begins at {}", file.offset());
+	/// println!("File begins at {:#?}", file.offset());
 	///
 	/// # Ok::<(), asar::Error>(())
 	/// ```
