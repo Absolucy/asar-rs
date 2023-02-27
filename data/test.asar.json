@@ -83,6 +83,12 @@
 					}
 				}
 			}
+		},
+		"symlink 1": {
+			"link": "folder 1/file 3.txt"
+		},
+		"symlink 2": {
+			"link": "folder 1/folder 3/file 6.txt"
 		}
 	}
 }
