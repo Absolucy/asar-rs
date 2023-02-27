@@ -6,7 +6,7 @@ use color_eyre::{
 	Result,
 };
 use std::{
-	fs::{self, File},
+	fs::{self, read_link, File},
 	io::BufWriter,
 };
 use walkdir::WalkDir;
@@ -58,14 +58,15 @@ pub fn pack(args: PackArgs) -> Result<()> {
 		}
 
 		if path.is_symlink() {
-			let link = std::fs::read_link(path).unwrap();
+			let link = read_link(path)
+				.wrap_err_with(|| format!("failed to read link of {}", path.display()))?;
 			let stripped_link = if link.is_absolute() {
 				link.strip_prefix(&args.dir).wrap_err_with(|| {
 					format!(
-							"'{}' is not a prefix of '{}'",
-					args.dir.display(),
-					link.display()
-				)
+						"'{}' is not a prefix of '{}'",
+						args.dir.display(),
+						link.display()
+					)
 				})?
 			} else {
 				&link
