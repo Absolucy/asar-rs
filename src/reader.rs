@@ -27,7 +27,7 @@ use std::{
 ///
 /// fn main() -> Result<()> {
 /// 	let asar_file = fs::read("archive.asar")?;
-/// 	let reader = AsarReader::new(&asar_file)?;
+/// 	let reader = AsarReader::new(&asar_file, None)?;
 ///
 /// 	println!("There are {} files in archive.asar", reader.files().len());
 /// 	Ok(())
@@ -38,6 +38,7 @@ pub struct AsarReader<'a> {
 	header: Header,
 	directories: BTreeMap<PathBuf, Vec<PathBuf>>,
 	files: BTreeMap<PathBuf, AsarFile<'a>>,
+	symlinks: BTreeMap<PathBuf, PathBuf>,
 	asar_path: Option<PathBuf>,
 }
 
@@ -76,7 +77,7 @@ impl<'a> AsarReader<'a> {
 	///
 	/// let asar_file = fs::read("archive.asar")?;
 	/// let (header, offset) = Header::read(&mut &asar_file[..])?;
-	/// let asar = AsarReader::new_from_header(header, offset, &asar_file)?;
+	/// let asar = AsarReader::new_from_header(header, offset, &asar_file, None)?;
 	/// # Ok::<(), asar::Error>(())
 	/// ```
 	pub fn new_from_header(
@@ -87,11 +88,13 @@ impl<'a> AsarReader<'a> {
 	) -> Result<Self> {
 		let mut files = BTreeMap::new();
 		let mut directories = BTreeMap::new();
+		let mut symlinks = BTreeMap::new();
 		let asar_path = asar_path.into();
 		recursive_read(
 			PathBuf::new(),
 			&mut files,
 			&mut directories,
+			&mut symlinks,
 			&header,
 			offset,
 			data,
@@ -101,6 +104,7 @@ impl<'a> AsarReader<'a> {
 			header,
 			files,
 			directories,
+			symlinks,
 			asar_path,
 		})
 	}
@@ -114,7 +118,7 @@ impl<'a> AsarReader<'a> {
 	/// use asar::AsarReader;
 	///
 	/// # let asar_file = fs::read("archive.asar")?;
-	/// # let asar = AsarReader::new(&asar_file)?;
+	/// # let asar = AsarReader::new(&asar_file, None)?;
 	/// for (path, file_info) in asar.files() {
 	/// 	println!("file {}", path.display());
 	/// 	println!("\t{} bytes", file_info.data().len());
@@ -139,7 +143,7 @@ impl<'a> AsarReader<'a> {
 	/// use asar::AsarReader;
 	///
 	/// # let asar_file = fs::read("archive.asar")?;
-	/// # let asar = AsarReader::new(&asar_file)?;
+	/// # let asar = AsarReader::new(&asar_file, None)?;
 	/// for (path, contents) in asar.directories() {
 	/// 	println!("dir {}", path.display());
 	/// 	for file in contents {
@@ -153,6 +157,27 @@ impl<'a> AsarReader<'a> {
 		&self.directories
 	}
 
+	/// Gets all symbolic links in the asar.
+	///
+	/// ## Example
+	///
+	/// ```rust,no_run
+	/// # use std::fs;
+	/// use asar::AsarReader;
+	///
+	/// # let asar_file = fs::read("archive.asar")?;
+	/// # let asar = AsarReader::new(&asar_file, None)?;
+	/// for (path, link) in asar.symlinks() {
+	/// 	println!("file {}", path.display());
+	/// 	println!("\tlink {}", link.display());
+	/// }
+	/// # Ok::<(), asar::Error>(())
+	/// ```
+	#[inline]
+	pub const fn symlinks(&self) -> &BTreeMap<PathBuf, PathBuf> {
+		&self.symlinks
+	}
+
 	/// Gets information about a file.
 	///
 	/// ## Example
@@ -163,13 +188,16 @@ impl<'a> AsarReader<'a> {
 	/// use std::path::Path;
 	///
 	/// # let asar_file = fs::read("archive.asar")?;
-	/// # let asar = AsarReader::new(&asar_file)?;
+	/// # let asar = AsarReader::new(&asar_file, None)?;
 	/// let file_info = asar.read(Path::new("hello.txt")).unwrap();
 	/// println!("hello.txt is {} bytes", file_info.data().len());
 	/// # Ok::<(), asar::Error>(())
 	/// ```
 	#[inline]
 	pub fn read(&self, path: &Path) -> Option<&AsarFile> {
+		if let Some(link) = self.symlinks.get(path) {
+			return self.files.get(link);
+		}
 		self.files.get(path)
 	}
 
@@ -183,7 +211,7 @@ impl<'a> AsarReader<'a> {
 	/// use std::path::Path;
 	///
 	/// # let asar_file = fs::read("archive.asar")?;
-	/// # let asar = AsarReader::new(&asar_file)?;
+	/// # let asar = AsarReader::new(&asar_file, None)?;
 	/// let contents = asar.read_dir(Path::new("dir a/dir b")).unwrap();
 	/// for file in contents {
 	/// 	println!("file {}", file.display());
@@ -214,7 +242,7 @@ impl<'a> AsarFile<'a> {
 	/// use std::path::Path;
 	///
 	/// # let asar_file = fs::read("archive.asar")?;
-	/// # let asar = AsarReader::new(&asar_file)?;
+	/// # let asar = AsarReader::new(&asar_file, None)?;
 	/// let file_info = asar.read(Path::new("hello.txt")).unwrap();
 	/// assert_eq!(file_info.data(), b"Hello, World!");
 	/// # Ok::<(), asar::Error>(())
@@ -233,7 +261,7 @@ impl<'a> AsarFile<'a> {
 	/// use std::path::Path;
 	///
 	/// # let asar_file = fs::read("archive.asar")?;
-	/// # let asar = AsarReader::new(&asar_file)?;
+	/// # let asar = AsarReader::new(&asar_file, None)?;
 	/// let file_info = asar.read(Path::new("hello.txt")).unwrap();
 	/// let integrity = file_info.integrity().unwrap();
 	/// assert_eq!(
@@ -253,6 +281,7 @@ fn recursive_read<'a>(
 	path: PathBuf,
 	file_map: &mut BTreeMap<PathBuf, AsarFile<'a>>,
 	dir_map: &mut BTreeMap<PathBuf, Vec<PathBuf>>,
+	symlink_map: &mut BTreeMap<PathBuf, PathBuf>,
 	header: &Header,
 	begin_offset: usize,
 	data: &'a [u8],
@@ -320,10 +349,13 @@ fn recursive_read<'a>(
 					});
 				}
 			}
-			file_map.insert(path, AsarFile {
-				data,
-				integrity: file.integrity().cloned(),
-			});
+			file_map.insert(
+				path,
+				AsarFile {
+					data,
+					integrity: file.integrity().cloned(),
+				},
+			);
 		}
 		Header::Directory { files } => {
 			for (name, header) in files {
@@ -336,12 +368,16 @@ fn recursive_read<'a>(
 					file_path,
 					file_map,
 					dir_map,
+					symlink_map,
 					header,
 					begin_offset,
 					data,
 					asar_path,
 				)?;
 			}
+		}
+		Header::Link { link } => {
+			symlink_map.insert(path, link.clone());
 		}
 	}
 	Ok(())
@@ -364,6 +400,28 @@ pub mod test {
 				.unwrap_or_else(|| panic!("test.asar contains invalid file {}", path.display()));
 			let real_contents = real_file.contents();
 			let asar_contents = file.data();
+			assert_eq!(real_contents, asar_contents);
+		}
+
+		for (path, link) in reader.symlinks() {
+			let real_symlink = ASAR_CONTENTS.get_file(path).unwrap_or_else(|| {
+				panic!(
+					"test.asar contains invalid symbolic link {}",
+					path.display()
+				)
+			});
+			let real_contents = real_symlink.contents();
+			let asar_contents = reader
+				.files()
+				.get(link)
+				.unwrap_or_else(|| {
+					panic!(
+						"test.asar does not contain original file {}",
+						link.display()
+					)
+				})
+				.data();
+
 			assert_eq!(real_contents, asar_contents);
 		}
 	}

@@ -18,6 +18,11 @@ pub fn list(args: ListArgs, read_unpacked: bool) -> Result<()> {
 		let path = root.join(path);
 		println!("{}", path.display());
 	}
+	for (path, link) in reader.symlinks() {
+		let path = root.join(path);
+		let link = root.join(link);
+		println!("{} -> {}", path.display(), link.display());
+	}
 
 	Ok(())
 }

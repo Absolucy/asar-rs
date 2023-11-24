@@ -6,7 +6,7 @@ use color_eyre::{
 	Result,
 };
 use std::{
-	fs::{self, File},
+	fs::{self, read_link, File},
 	io::BufWriter,
 };
 use walkdir::WalkDir;
@@ -56,6 +56,26 @@ pub fn pack(args: PackArgs) -> Result<()> {
 				continue;
 			}
 		}
+
+		if path.is_symlink() {
+			let link = read_link(path)
+				.wrap_err_with(|| format!("failed to read link of {}", path.display()))?;
+			let stripped_link = if link.is_absolute() {
+				link.strip_prefix(&args.dir).wrap_err_with(|| {
+					format!(
+						"'{}' is not a prefix of '{}'",
+						args.dir.display(),
+						link.display()
+					)
+				})?
+			} else {
+				&link
+			};
+			asar.write_symlink(stripped_path, stripped_link)
+				.wrap_err_with(|| format!("failed to write {} to asar", path.display()))?;
+			continue;
+		}
+
 		let file = fs::read(path).wrap_err_with(|| format!("failed to read {}", path.display()))?;
 
 		asar.write_file(stripped_path, &file, is_executable::is_executable(path))

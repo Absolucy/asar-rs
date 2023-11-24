@@ -22,7 +22,7 @@
 //!
 //! fn main() -> Result<()> {
 //! 	let asar_file = fs::read("archive.asar")?;
-//! 	let asar = AsarReader::new(&asar_file)?;
+//! 	let asar = AsarReader::new(&asar_file, None)?;
 //!
 //! 	println!("There are {} files in archive.asar", asar.files().len());
 //! 	for path in asar.files().keys() {
@@ -39,7 +39,7 @@
 //!
 //! fn main() -> Result<()> {
 //! 	let asar_file = fs::read("archive.asar")?;
-//! 	let asar = AsarReader::new(&asar_file)?;
+//! 	let asar = AsarReader::new(&asar_file, None)?;
 //!
 //! 	let path = PathBuf::from("hello.txt");
 //! 	let file = asar.files().get(&path).unwrap();

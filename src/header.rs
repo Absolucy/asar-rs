@@ -6,6 +6,7 @@ use serde_with::{hex::Hex, serde_as, DisplayFromStr};
 use std::{
 	collections::HashMap,
 	fmt::{self, Display},
+	path::PathBuf,
 	str::FromStr,
 };
 
@@ -23,6 +24,7 @@ pub(crate) static TEST_ASAR: &[u8] = include_bytes!("../data/test.asar");
 pub enum Header {
 	File(File),
 	Directory { files: HashMap<String, Self> },
+	Link { link: PathBuf },
 }
 
 impl Header {
@@ -147,7 +149,7 @@ impl File {
 	/// #     Header::File(file) => file,
 	/// #     _ => panic!("Not a file"),
 	/// # };
-	/// println!("File begins at {}", file.offset());
+	/// println!("File begins at {:#?}", file.offset());
 	///
 	/// # Ok::<(), asar::Error>(())
 	/// ```
