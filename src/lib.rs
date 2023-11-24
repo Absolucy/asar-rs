@@ -8,7 +8,7 @@
 	clippy::correctness,
 	clippy::missing_const_for_fn
 )]
-#![allow(clippy::tabs_in_doc_comments)]
+#![allow(clippy::tabs_in_doc_comments, clippy::too_many_arguments)]
 
 //! This crate allows for the parsing, reading, and writing of [asar](https://github.com/electron/asar) archives,
 //! often seen in [Electron](https://www.electronjs.org/)-based applications.
