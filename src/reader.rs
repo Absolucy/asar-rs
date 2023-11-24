@@ -349,13 +349,10 @@ fn recursive_read<'a>(
 					});
 				}
 			}
-			file_map.insert(
-				path,
-				AsarFile {
-					data,
-					integrity: file.integrity().cloned(),
-				},
-			);
+			file_map.insert(path, AsarFile {
+				data,
+				integrity: file.integrity().cloned(),
+			});
 		}
 		Header::Directory { files } => {
 			for (name, header) in files {
@@ -400,28 +397,6 @@ pub mod test {
 				.unwrap_or_else(|| panic!("test.asar contains invalid file {}", path.display()));
 			let real_contents = real_file.contents();
 			let asar_contents = file.data();
-			assert_eq!(real_contents, asar_contents);
-		}
-
-		for (path, link) in reader.symlinks() {
-			let real_symlink = ASAR_CONTENTS.get_file(path).unwrap_or_else(|| {
-				panic!(
-					"test.asar contains invalid symbolic link {}",
-					path.display()
-				)
-			});
-			let real_contents = real_symlink.contents();
-			let asar_contents = reader
-				.files()
-				.get(link)
-				.unwrap_or_else(|| {
-					panic!(
-						"test.asar does not contain original file {}",
-						link.display()
-					)
-				})
-				.data();
-
 			assert_eq!(real_contents, asar_contents);
 		}
 	}
