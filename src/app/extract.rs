@@ -18,8 +18,10 @@ pub fn extract(args: ExtractArgs, read_unpacked: bool) -> Result<()> {
 		if !out_path.starts_with(&args.destination) {
 			panic!("asar archive attempted to escape destination");
 		}
-		fs::create_dir(&out_path)
-			.wrap_err_with(|| format!("failed to write directory {}", out_path.display()))?;
+		if !out_path.exists() {
+			fs::create_dir_all(&out_path)
+				.wrap_err_with(|| format!("failed to write directory {}", out_path.display()))?;
+		}
 	}
 	for (path, file) in reader.files() {
 		let out_path = args.destination.join(path);
@@ -35,13 +37,13 @@ pub fn extract(args: ExtractArgs, read_unpacked: bool) -> Result<()> {
 		if !out_path.starts_with(&args.destination) || !out_link.starts_with(&args.destination) {
 			panic!("asar archive attempted to escape destination");
 		}
-		#[cfg(all(unix))]
+		#[cfg(unix)]
 		{
 			std::os::unix::fs::symlink(out_link, &out_path).wrap_err_with(|| {
 				format!("failed to write symbolic link {}", out_path.display())
 			})?;
 		}
-		#[cfg(all(windows))]
+		#[cfg(windows)]
 		{
 			std::os::windows::fs::symlink_file(out_link, &out_path).wrap_err_with(|| {
 				format!("failed to write symbolic link {}", out_path.display())
